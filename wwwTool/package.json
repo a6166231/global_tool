@@ -1,0 +1,25 @@
+{
+  "name": "wwwtool",
+  "version": "0.0.1",
+  "description": "wTool test",
+  "author": "www",
+  "main": "main.js",
+  "panel": {
+    "main": "panel/index.js",
+    "type": "dockable",
+    "title": "setting panel",
+    "width": 400,
+    "height": 300
+  },
+  "main-menu": {
+    "tool/wwwTool/openToolDir": {
+      "message": "wwwtool:openToolDir"
+    },
+    "tool/wwwTool/setting": {
+      "message": "wwwtool:setting"
+    },
+    "tool/wwwTool/build test": {
+      "message": "wwwtool:buildTest"
+    }
+  }
+}
