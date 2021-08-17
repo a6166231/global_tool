@@ -1,0 +1,34 @@
+<div>
+    <div style="width: 100%;">
+        <h1>选择plist来源</h1>
+        <input type="radio" id="choice1" name="resource" value="当前项目">
+        <label for="choice1">当前项目</label>
+        <input type="radio" id="choice2" name="resource" value="选择资源">
+        <label for="choice2">选择资源</label>
+    </div>
+    <div id="now" style="display: none;">
+        <h2>
+            选择图集
+        </h2>
+        <h4>
+            plist：&nbsp;<div id="plistDiv"></div> &nbsp;&nbsp;<button id="exportBtn1" style="visibility: hidden;">导出</button>
+        </h4>
+        <div id="ptexture">
+
+        </div>
+    </div>
+    <div id="select" style="display: none;">
+        <table id="plist" ref="plist" @dragenter="dragEnter" @dragover="dragOver" @drop="onDrop">
+            <h2>请将图集资源拖拽到方框内</h2>
+            <td colspan="6" style="border: dashed 1px #585858; border-radius:10px;">
+                <canvas id="plistCanvas2" ref="plistCanvas2" :width="500px" :height="500px"></canvas>
+            </td>
+            <td>
+                <div>
+
+                </div>
+            </td>
+        </table>
+        <button id="exportBtn2" style="visibility: hidden;">导出</button>
+    </div>
+</div>

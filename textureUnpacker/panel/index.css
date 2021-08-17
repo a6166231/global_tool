@@ -1,0 +1,41 @@
+:host {
+    margin: 5px;
+}
+h1,h2 {
+    color: #f90;
+}
+
+input {
+    background: #222222;
+    border: solid 1px #222222;
+    border-radius: 3px;
+    height: 20px;
+    color: #bdbdbd;
+}
+
+button {
+    color:#00FFFF;
+    width: 100px;
+    height: 30px;
+    font-weight: 100;
+}
+
+button {
+    background: #585858;
+    cursor: pointer;
+}
+
+.overflow {
+    width: auto;
+    height: auto;
+    max-height: 300px;
+    overflow-x: scroll;
+}
+
+#plistImg {
+    height:400px;
+}
+
+label{
+    font-size: 20px;
+}

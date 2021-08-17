@@ -1,0 +1,23 @@
+{
+  "name": "texture-unpacker",
+  "version": "0.0.1",
+  "description": "texture-unpacker",
+  "author": "www",
+  "main": "main.js",
+  "panel": {
+    "main": "panel/index.js",
+    "type": "dockable",
+    "title": "unpacker",
+    "width": 600,
+    "height": 600
+  },
+  "main-menu": {
+    "tool/textureUnpacker/unpacker": {
+      "message": "texture-unpacker:unpacker"
+    }
+  },
+  "dependencies": {
+    "plist": "^3.0.3",
+    "sharp": "^0.28.3"
+  }
+}
