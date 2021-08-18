@@ -1,7 +1,9 @@
 :host {
     margin: 5px;
 }
-h1,h2 {
+
+h1,
+h2 {
     color: #f90;
 }
 
@@ -14,28 +16,30 @@ input {
 }
 
 button {
-    color:#00FFFF;
+    color: #00FFFF;
     width: 100px;
     height: 30px;
     font-weight: 100;
-}
-
-button {
     background: #585858;
     cursor: pointer;
 }
 
-.overflow {
-    width: auto;
-    height: auto;
-    max-height: 300px;
-    overflow-x: scroll;
-}
-
-#plistImg {
-    height:400px;
-}
-
-label{
+label {
     font-size: 20px;
+}
+
+#tips {
+    width: 300px;
+    height: 300px;
+    border: dashed 1px #585858;
+    border-radius: 10px;
+}
+
+#tips>div {
+    width: 300px;
+    height: 300px;
+    font-size: 100;
+    text-align: center;
+    color: #585858;
+    line-height: 300px;
 }
