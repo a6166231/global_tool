@@ -12,7 +12,9 @@ const Fs = require('fs');
 const path = require('path');
 
 const plist = require('plist');
-const sharp = require('sharp');
+
+let sharppath = process.platform == 'darwin' ? "sharp-darwin" : "sharp-win32";
+const sharp = require(`../${sharppath}/lib/index.js`);
 
 const getIntArray = function (str) {
     return str.replace(/[^\-?(0-9)]+/ig, ' ').trim().split(' ').map((s) => {

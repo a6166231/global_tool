@@ -2,7 +2,8 @@ const Fs = require('fs');
 const path = require('path');
 
 const plist = require('plist');
-const sharp = require('sharp');
+let sharppath = process.platform == 'darwin' ? "sharp-darwin" : "sharp-win32";
+const sharp = require(`../${sharppath}/lib/index.js`);
 
 const getIntArray = function (str) {
     return str.replace(/[^\-?(0-9)]+/ig, ' ').trim().split(' ').map((s) => {
@@ -63,63 +64,74 @@ module.exports = {
         findPlist(dirpath);
         return ary;
     },
-    unpack(plistPath, outputDir) {
-        if (outputDir == null) {
-            outputDir = plistPath.substring(0, plistPath.lastIndexOf('.'));
-        }
-        if (Fs.existsSync(outputDir) == false) {
-            Fs.mkdirSync(outputDir);
-        }
-        plistPath = path.resolve(plistPath);
-        let fileContent = Fs.readFileSync(plistPath, 'utf-8');
-        let parsedFile = plist.parse(fileContent);
-        let frames = parsedFile.frames;
-        let metadata = parsedFile.metadata;
-
-        let format = metadata.format;
-        //图片路径使用绝对路径
-        let imgPath = path.dirname(plistPath) + "/" + metadata.textureFileName;
-
-        for (let frameName in frames) {
-            let frame = frames[frameName];
-            let frameInfo = parseFrame(frame, format);
-            if (!frameInfo.frame) continue;
-            let imgSharp = sharp(imgPath);
-            let [left, top, width, height] = frameInfo.frame;
-            if (frameInfo.rotated) {
-                let t = width;
-                width = height;
-                height = t;
+    async unpack(plistPath, outputDir) {
+        return new Promise(async (callback) => {
+            if (outputDir == null) {
+                outputDir = plistPath.substring(0, plistPath.lastIndexOf('.'));
             }
+            if (Fs.existsSync(outputDir) == false) {
+                Fs.mkdirSync(outputDir);
+            }
+            plistPath = path.resolve(plistPath);
+            let fileContent = Fs.readFileSync(plistPath, 'utf-8');
+            let parsedFile = plist.parse(fileContent);
+            let frames = parsedFile.frames;
+            let metadata = parsedFile.metadata;
 
-            //根据配置文件读取图片素材坐标大小
-            imgSharp = imgSharp.extract({
-                left: left,
-                top: top,
-                width: width,
-                height: height
-            });
+            let format = metadata.format;
+            //图片路径使用绝对路径
+            let imgPath = path.dirname(plistPath) + "/" + metadata.textureFileName;
 
-            //读取文件流
-            imgSharp.raw()
-                .toBuffer()
-                .then((data) => {
-                    //buffer数据转成uint8数组矩阵
-                    const pixelArray = new Uint8ClampedArray(data);
-                    let png = sharp(pixelArray, {
-                            raw: {
-                                width: width,
-                                height: height,
-                                channels: 4
+            let count = 0;
+
+            for (let frameName in frames) {
+                let frame = frames[frameName];
+                let frameInfo = parseFrame(frame, format);
+                if (!frameInfo.frame) continue;
+                let imgSharp = sharp(imgPath);
+                let [left, top, width, height] = frameInfo.frame;
+                if (frameInfo.rotated) {
+                    let t = width;
+                    width = height;
+                    height = t;
+                }
+
+                //根据配置文件读取图片素材坐标大小
+                imgSharp = imgSharp.extract({
+                    left: left,
+                    top: top,
+                    width: width,
+                    height: height
+                });
+
+                await new Promise((call) => {
+                    //读取文件流
+                    imgSharp.raw()
+                        .toBuffer()
+                        .then((data) => {
+                            //buffer数据转成uint8数组矩阵
+                            const pixelArray = new Uint8ClampedArray(data);
+                            let png = sharp(pixelArray, {
+                                    raw: {
+                                        width: width,
+                                        height: height,
+                                        channels: 4
+                                    }
+                                })
+                                .png()
+                            //像素矩阵先生成  再旋转
+                            if (frameInfo.rotated) {
+                                png = png.rotate(-90);
                             }
+                            count++;
+                            call();
+                            png.toFile(`${outputDir}/${frameName}`);
                         })
-                        .png()
-                    //像素矩阵先生成  再旋转
-                    if (frameInfo.rotated) {
-                        png = png.rotate(-90);
-                    }
-                    png.toFile(`${outputDir}/${frameName}`);
                 })
-        }
+
+            }
+            callback(count);
+        })
+
     }
 }

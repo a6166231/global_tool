@@ -9,8 +9,10 @@ const {
     dialog
 } = require('electron').remote;
 
-var template = Fs.readFileSync(__dirname + '\\index.html') + "";
-var style = Fs.readFileSync(__dirname + '\\index.css');
+let constSlash = process.platform == 'darwin' ? "/" : "\\";
+
+var template = Fs.readFileSync(__dirname + `${constSlash}index.html`) + "";
+var style = Fs.readFileSync(__dirname + `${constSlash}index.css`);
 
 //读取项目路径下所有plist文件
 let plistFile = PlistTool.getAllPlistFile(path.join(Editor.Project.path, "assets"));
@@ -121,7 +123,7 @@ Editor.Panel.extend({
         if (index == 0) return;
 
         let plistpath = plistFile[index - 1];
-        plistpath = plistpath.replace(/\//g, "\\");
+        plistpath = plistpath.replace(/\//g, `${constSlash}`);
         this.showPng(plistpath, this.$plistTexture1);
     },
 
@@ -143,7 +145,9 @@ Editor.Panel.extend({
     exportCall() {
         if (!this.selectPlistPath) return;
         let dirpath = this.selectFolder();
-        PlistTool.unpack(this.selectPlistPath, dirpath);
+        PlistTool.unpack(this.selectPlistPath, dirpath).then((total) => {
+            Editor.success("success! export : ", total);
+        });
     },
 
     selectFile() {
