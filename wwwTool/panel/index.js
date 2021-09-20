@@ -45,6 +45,6 @@ Editor.Panel.extend({
     messages: {
         "wwwtool:test1"(args) {
             Editor.log("ttt ", args)
-        }
+        },
     }
 });

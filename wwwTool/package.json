@@ -21,5 +21,8 @@
     "tool/wwwTool/build test": {
       "message": "wwwtool:buildTest"
     }
+  },
+  "dependencies": {
+    "gulp": "^4.0.2"
   }
 }

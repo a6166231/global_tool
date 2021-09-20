@@ -1,15 +1,15 @@
 'use strict';
-let process = require("child_process");
+let childprocess = require("child_process");
 
 function openToolDir() {
-    process.exec('start "" ' + __dirname);
-    Editor.Ipc.sendToMainWin("wwwtool:test1", 1);
+    let cmd = (process.platform == 'darwin' ? "open" : "start");
+    childprocess.exec(`${cmd} ${__dirname}`);
 }
 
 function execTask(task, cb) {
     let ppath = Editor.Project.path;
     let time = new Date().getTime();
-    process.exec("gulp " + task + " --option " + ppath, {
+    childprocess.exec("gulp " + task + " --option " + ppath, {
         cwd: __dirname
     }, (err, stdstr) => {
         if (err) {
