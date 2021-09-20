@@ -6,6 +6,8 @@ const {
 var template = Fs.readFileSync(Editor.url('packages://bitmapfont/panel/index.html', 'utf8'));
 var style = Fs.readFileSync(Editor.url('packages://bitmapfont/panel/index.css', 'utf8'));
 
+let constSlash = process.platform == 'darwin' ? "/" : "\\";
+
 Editor.Panel.extend({
     style: style,
     template: template,
@@ -78,7 +80,7 @@ Editor.Panel.extend({
                 updateCanvas() {
                     if (!this.imageList.length) return;
                     let height = 0;
-                   
+
                     this.imageList.forEach(img => {
                         if (img.height > height) height = img.height;
                     });
@@ -88,7 +90,7 @@ Editor.Panel.extend({
                     this.StreamingLayer(height);
                 },
                 /** 图片集流式布局 */
-                StreamingLayer(height){
+                StreamingLayer(height) {
                     let space = 2;
                     let that = this;
 
@@ -115,7 +117,7 @@ Editor.Panel.extend({
                         x += img2.width + space;
                     });
 
-                                        
+
                     //todo 根据当前最大宽高 是否需要重置canvas
                     //todo1 powerof 2 canvas
                     //todo2 min canvas
@@ -159,9 +161,9 @@ chars count=${this.imageList.length}`;
                     }).then((result) => {
                         let fontPath = result.filePath;
                         if (fontPath) {
-                            let fontArr = fontPath.split("\\");
+                            let fontArr = fontPath.split(`${constSlash}`);
                             this.fontName = fontArr[fontArr.length - 1];
-                            this.filePath = fontPath.replace("\\" + this.fontName, "");
+                            this.filePath = fontPath.replace(`${constSlash}` + this.fontName, "");
                             if (this.filePath) {
                                 Editor.log("选择完成，保存中");
                                 func();
@@ -170,13 +172,13 @@ chars count=${this.imageList.length}`;
                     });
                 },
                 saveFnt() {
-                    Fs.writeFileSync(this.filePath.replace(/\\/g, "/") + '/' + this.fontName + '.fnt', this.fontInfo);
+                    Fs.writeFileSync(this.filePath.replace(/\\/g, `${constSlash}`) + '/' + this.fontName + '.fnt', this.fontInfo);
                 },
                 savePng() {
                     let src = self.$fontCanvas.toDataURL("image/png");
                     let data = src.replace(/^data:image\/\w+;base64,/, "");
                     let buffer = new window.Buffer(data, 'base64');
-                    Fs.writeFileSync(this.filePath.replace(/\\/g, "/") + '/' + this.fontName + '.png', buffer);
+                    Fs.writeFileSync(this.filePath.replace(/\\/g, `${constSlash}`) + '/' + this.fontName + '.png', buffer);
                     Editor.log("保存成功");
                 }
             }

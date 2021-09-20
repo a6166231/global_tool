@@ -15,5 +15,8 @@
         "title": "bitmapfont",
         "width": 400,
         "height": 600
+    },
+    "dependencies": {
+        "fs": "^0.0.1-security"
     }
 }
