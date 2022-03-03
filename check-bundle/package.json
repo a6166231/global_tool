@@ -1,0 +1,12 @@
+{
+    "name": "checkbundle",
+    "version": "0.0.1",
+    "description": "check every bundle import",
+    "author": "Cocos Creator",
+    "main": "main.js",
+    "main-menu": {
+        "checkBundle/check": {
+            "message": "checkBundle:check"
+        }
+    }
+}
