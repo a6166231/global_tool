@@ -1,4 +1,7 @@
 # global_tool
+## check-bundle ##
+- 找出当前项目互相引用分包的脚本
+
 ## bitmapfont ##
 - 修改cocos扩展商店上的bitmapfont位图字体工具  （自用
    - [x] 保存图片文件时路径报错
