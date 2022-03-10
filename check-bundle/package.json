@@ -5,8 +5,11 @@
     "author": "Cocos Creator",
     "main": "main.js",
     "main-menu": {
-        "checkBundle/check": {
-            "message": "checkBundle:check"
+        "check-bundle/script": {
+            "message": "check-bundle:script"
+        },
+        "check-bundle/res": {
+            "message": "check-bundle:res"
         }
     }
 }

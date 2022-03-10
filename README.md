@@ -1,6 +1,7 @@
 # global_tool
 ## check-bundle ##
 - 找出当前项目互相引用分包的脚本
+- 找出当前项目分包之间资源的互相引用
 
 ## bitmapfont ##
 - 修改cocos扩展商店上的bitmapfont位图字体工具  （自用
