@@ -3,11 +3,10 @@ const fs = require("fs")
 const path = require('path');
 
 //根据自己分包的命名逻辑来判断是不是分包
-var isBundle = async function (str) {
+var isBundle = async function (str, dir = '') {
     return new Promise((call) => {
-        //如果是res/resources 直接返回true
-        if (str == 'resources' || str == 'res') {
-            call(true);
+        if (dir == 'res.meta' || dir == 'resources.meta') {
+            call(true)
             return;
         }
         fs.readFile(str, 'utf8', async (err, data) => {
@@ -64,7 +63,7 @@ var getResList = async function (dir) {
     })
 }
 
-var checkTsList = function (ppath ,bundle, list) {
+var checkTsList = function (ppath, bundle, list) {
     for (let ts of list) {
         fs.readFile(ts, 'utf8', async (err, data) => {
             const lines = data.split(/\r?\n/);
@@ -128,7 +127,8 @@ var checkPrefabByMap = async function (prefabList, resMap) {
                         for (let line of lines) {
                             if (line.indexOf('__uuid__') != -1) {
                                 let useUuid = JSON.parse(`{${line}}`)["__uuid__"]
-                                if (resMap[useUuid] && resMap[useUuid].bundle != bundle) {
+                                if (resMap[useUuid] && resMap[useUuid].bundle != bundle &&
+                                    resMap[useUuid].bundle != 'res' && resMap[useUuid].bundle != 'resources') {
                                     let obj = `\n"user path": ${prefabPath},\n"asset path": ${resMap[useUuid].path},\n"uuid": ${useUuid}`
                                     Editor.warn("bundle: " + bundle + " use " + resMap[useUuid].bundle + " asset. infomation :", obj);
                                 }
@@ -155,7 +155,7 @@ var checkScript = async function () {
             if (isBundle(dir)) {
                 let list = await getTsList(path.join(ASSETS_Path, dir))
                 if (list.length == 0) continue;
-                checkTsList(path.join(ASSETS_Path, dir),dir, list)
+                checkTsList(path.join(ASSETS_Path, dir), dir, list)
             }
         }
         Editor.success("check Over")
@@ -172,7 +172,7 @@ var checkResources = function () {
         let prefabAry = {};
         let resAry = {};
         for (let dir of bundleList) {
-            if (dir.indexOf('.meta') > -1 && await isBundle(path.join(ASSETS_Path, dir))) {
+            if (dir.indexOf('.meta') > -1 && await isBundle(path.join(ASSETS_Path, dir), dir)) {
                 const sDir = dir.split('.meta')[0]
                 let list = await getResList(path.join(ASSETS_Path, sDir))
                 resAry[sDir] = list[0];
@@ -209,13 +209,14 @@ module.exports = {
 
     messages: {
         // 'check-bundle:script'() {
-            // checkScript()
+        // checkScript()
         // },
         'check-bundle:res'() {
             checkResources()
         },
         'check-bundle:ts-lint'() {
-            tsLint()
+            // tsLint()
+            Editor.log('skip')
         },
     },
 };
