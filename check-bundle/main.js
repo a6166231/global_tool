@@ -1,6 +1,7 @@
 'use strict';
 const fs = require("fs")
 const path = require('path');
+const Parser = require("./parser");
 
 //根据自己分包的命名逻辑来判断是不是分包
 var isBundle = async function (str, dir = '') {
@@ -90,31 +91,62 @@ var getResMap = function (resList) {
         let map = {}
         for (let bundle in resList) {
             for (let dir of resList[bundle]) {
-                await new Promise((callfunc) => {
-                    fs.readFile(dir, 'utf8', (err, data) => {
-                        let obj = JSON.parse(data)
-                        if (obj.uuid) {
-                            map[obj.uuid] = {
-                                path: path.join(path.dirname(dir), path.basename(dir, ".meta")),
-                                obj: obj,
-                                bundle: bundle,
-                            }
-                        }
-                        let name = path.basename(dir).split(".")[0];
-                        if (obj.subMetas[name] && obj.subMetas[name].uuid) {
-                            map[obj.subMetas[name].uuid] = {
-                                path: path.join(path.dirname(dir), path.basename(dir, ".meta")),
-                                obj: obj,
-                                bundle: bundle,
-                            }
-                        }
-                        callfunc();
-                    })
-                })
+                const mpath = path.join(path.dirname(dir), path.basename(dir, ".meta"))
+                let uuid = Editor.assetdb.fspathToUuid(mpath);
+                if (uuid) {
+                    map[uuid] = {
+                        path: mpath,
+                        bundle: bundle,
+                    }
+                }
+                let info = Editor.assetdb.subAssetInfosByPath(mpath)[0];
+                if(info){
+                    map[info.uuid] = {
+                        path: mpath,
+                        bundle: bundle,
+                    }
+                }
             }
         }
         callfunc(map)
     })
+}
+
+var getNodePathByUidInTree = function (tree) {
+    let npath = []
+    if (!tree) return npath;
+    for (let children of tree.children) {
+        let uuid = containsValue(children.components, '__uuid__');
+        if (uuid) {
+            npath.push({
+                uuid: uuid,
+                npath: children.path
+            })
+        }
+        npath.push(...getNodePathByUidInTree(children))
+    }
+    return npath;
+}
+
+var containsValue = function (object, value) {
+    let result = '';
+    const search = (_object) => {
+        if (Parser.isObject(_object)) {
+            for (const key in _object) {
+                if (key === value) {
+                    result = _object[key];
+                    return;
+                }
+                search(_object[key]);
+            }
+        } else if (Array.isArray(_object)) {
+            for (let i = 0, l = _object.length; i < l; i++) {
+                search(_object[i]);
+            }
+        }
+    }
+    search(object);
+    return result;
 }
 
 var checkPrefabByMap = async function (prefabList, resMap) {
@@ -123,15 +155,14 @@ var checkPrefabByMap = async function (prefabList, resMap) {
             for (let prefabPath of prefabList[bundle]) {
                 await new Promise((callfunc) => {
                     fs.readFile(prefabPath, 'utf8', (err, data) => {
-                        let lines = data.split(/\r?\n/);
-                        for (let line of lines) {
-                            if (line.indexOf('__uuid__') != -1) {
-                                let useUuid = JSON.parse(`{${line}}`)["__uuid__"]
-                                if (resMap[useUuid] && resMap[useUuid].bundle != bundle &&
-                                    resMap[useUuid].bundle != 'res' && resMap[useUuid].bundle != 'resources') {
-                                    let obj = `\n"user path": ${prefabPath},\n"asset path": ${resMap[useUuid].path},\n"uuid": ${useUuid}`
-                                    Editor.warn("bundle: " + bundle + " use " + resMap[useUuid].bundle + " asset. infomation :", obj);
-                                }
+                        for (let uidData of getNodePathByUidInTree(Parser.convert(JSON.parse(data)))) {
+                            if (resMap[uidData.uuid] && resMap[uidData.uuid].bundle != bundle &&
+                                resMap[uidData.uuid].bundle != 'res' && resMap[uidData.uuid].bundle != 'resources') {
+                                let obj = `\n"user path": ${Editor.assetdb.fspathToUrl(prefabPath).replace('db://','')}`;
+                                obj += `,\n"nodePath": ${uidData.npath}`;
+                                obj += `,\n"asset path": ${Editor.assetdb.fspathToUrl(resMap[uidData.uuid].path).replace('db://','')}`;
+                                obj += `,\n"uuid": ${uidData.uuid}`;
+                                Editor.warn("bundle: " + bundle + " use " + resMap[uidData.uuid].bundle + " asset. infomation :", obj);
                             }
                         }
                         callfunc();
@@ -185,19 +216,6 @@ var checkResources = function () {
     })
 }
 
-var tsLint = function () {
-    const exec = require("child_process").exec;
-    Editor.success("~start ts lint~");
-    exec(`tslint --project "${Editor.Project.path}" --config ${path.join(__dirname,"tslint.json")}`, (err, sdout, stderr) => {
-        if (stderr) {
-            Editor.err(stderr);
-        } else {
-            Editor.warn(sdout);
-        }
-        Editor.success("~lint over~");
-    })
-}
-
 module.exports = {
     load() {
 
@@ -213,10 +231,6 @@ module.exports = {
         // },
         'check-bundle:res'() {
             checkResources()
-        },
-        'check-bundle:ts-lint'() {
-            // tsLint()
-            Editor.log('skip')
         },
     },
 };
