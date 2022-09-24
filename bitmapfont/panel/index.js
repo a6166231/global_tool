@@ -126,7 +126,7 @@ Editor.Panel.extend({
                 loadFileData() {
                     let str = `info size=${this.fontSize} unicode=1 stretchH=100 smooth=1 aa=1 padding=0,0,0,0 spacing=1,1 outline=0
 common lineHeight=${this.fontSize} base=23 scaleW=${this.canvasWidth} scaleH=${this.canvasHeight} pages=1 packed=0
-page id=0 file="${this.fontName}.png"
+page id=0 file="${this.fontName}_0.png"
 chars count=${this.imageList.length}`;
                     this.imageList.forEach(img => {
                         str += `char id=${this.caseConvertEasy(img.char).charCodeAt(0)} x=${img.x} y=${img.y} width=${img.width} height=${img.height} xoffset=0 yoffset=0 xadvance=${img.width} \n`;
