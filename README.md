@@ -18,10 +18,10 @@
 ## textureUnpacker ##
 - plist图集文件拆分插件，可以操作当前项目下的plist/指定的plist
 
-**插件保存到任意路径下 ，创建  _软链接_  到cocos全局插件路径下，同样可以加载插件**
+**插件保存到任意路径下 ，创建  _目录链接_  到cocos全局插件路径下，同样可以加载插件**
 
 windows
->mklink ~/User/.CocosCreator/packages/wwwtool ~/wwwtool  
+>mklink /J ~/User/.CocosCreator/packages/wwwtool ~/wwwtool  
 
 mac
 >ln -s ~/wwwtool ~/User/.CocosCreator/packages/wwwtool  
