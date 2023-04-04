@@ -12,14 +12,16 @@ var tsc_b = function () {
     let cmd = 'tsc -b ' + Editor.Project.path
     console.log('- start -')
     let cp = exec(cmd, (err, stdout, stderr) => {
+        let out = stdout.split('\n');
+        for (let info of out) {
+            formatErrorInfo(info)
+        }
         bIsRunning = false;
         console.log('total :', bakUpUrl.length)
         console.log('- over -')
         // console.log('\x1B[32m%s\x1B[0m', 'success')
         // console.log('%c在这个符号后的信息是红色','color: green')
     })
-    cp.stdout?.on('data', formatErrorInfo);
-    cp.stderr?.on('data', formatErrorInfo);
 }
 
 /**
@@ -51,15 +53,19 @@ var formatErrorInfo = async function (data: string) {
     bakPath = path = data.slice(0, indexOf);
 
     let lineIndex = path.indexOf('(');
-    if (lineIndex >= 0) {
-        let lineS = path.slice(lineIndex + 1, path.length - 1);
-        path = path.slice(0, lineIndex) + ':' + lineS.split(',').join(':')
-
+    if (data.indexOf('error') >= 0 && lineIndex >= 0 && path.indexOf(')')) {
         let p = path.slice(0, lineIndex)
         p = p.replace(PPATH, 'db:/')
         bakUpUrl.push(p);
+
+        let lineS = path.slice(lineIndex + 1, path.length - 1);
+        path = path.slice(0, lineIndex) + ':' + lineS.split(',').join(':')
+
+        path = `(file:///${path})`
+    } else {
+        path = '&emsp;-' + path;
     }
-    data = data.replace(bakPath, `(file:///${path})`)
+    data = data.replace(bakPath, path)
     console.log(`${data}`)
 }
 
