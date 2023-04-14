@@ -1,24 +1,76 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.unload = exports.load = exports.methods = void 0;
 //@ts-ignore
 const child_process_1 = require("child_process");
+const fs_1 = __importDefault(require("fs"));
+const path_1 = __importDefault(require("path"));
 var bIsRunning = false;
 var bakUpUrl = [];
-var tsc_b = function () {
+var tsCfg;
+var updateTsConfig = async function (status) {
+    return new Promise(async (resolve, reject) => {
+        const cfgPath = path_1.default.join(Editor.Project.path, 'tsconfig.json');
+        console.log('cfgpath : ', cfgPath);
+        if (status) {
+            fs_1.default.readFile(cfgPath, 'utf-8', async (err, data) => {
+                if (!err) {
+                    tsCfg = data;
+                    let obj = JSON.parse(spliceNote(data));
+                    if (obj.compilerOptions) {
+                        obj.compilerOptions.skipLibCheck = true;
+                    }
+                    else {
+                        obj.compilerOptions = {
+                            'skipLibCheck': true,
+                        };
+                    }
+                    await writeTsConfig(JSON.stringify(obj));
+                    resolve(null);
+                }
+                else {
+                    reject(err);
+                }
+            });
+        }
+        else {
+            await writeTsConfig(tsCfg);
+            resolve(null);
+        }
+    });
+};
+var spliceNote = function (str) {
+    let split = str.split('\n');
+    for (let i = 0; i < split.length; i++) {
+        if (split[i].indexOf('//') >= 0 || split[i].indexOf('/*') >= 0 || split[i].indexOf('*/') >= 0) {
+            split.splice(i, 1);
+            i--;
+        }
+    }
+    return split.join('\n');
+};
+var writeTsConfig = async function (data) {
+    return await fs_1.default.writeFileSync(path_1.default.join(Editor.Project.path, 'tsconfig.json'), data, 'utf-8');
+};
+var tsc_b = async function () {
     if (bIsRunning)
         return;
+    await updateTsConfig(true);
     bakUpUrl = [];
     bIsRunning = true;
     let cmd = 'tsc -b ' + Editor.Project.path;
     console.log('- start -');
-    let cp = (0, child_process_1.exec)(cmd, (err, stdout, stderr) => {
+    (0, child_process_1.exec)(cmd, async (err, stdout, stderr) => {
         let out = stdout.split('\n');
         for (let info of out) {
             formatErrorInfo(info);
         }
         bIsRunning = false;
         console.log('total :', bakUpUrl.length);
+        await updateTsConfig(false);
         console.log('- over -');
         // console.log('\x1B[32m%s\x1B[0m', 'success')
         // console.log('%c在这个符号后的信息是红色','color: green')
@@ -32,9 +84,9 @@ exports.methods = {
     startBuildTs() {
         tsc_b();
     },
-    startBuildTsAndOpen() {
+    async startBuildTsAndOpen() {
         if (bakUpUrl.length == 0) {
-            tsc_b();
+            await tsc_b();
         }
         for (let path of bakUpUrl) {
             Editor.Message.request('asset-db', 'query-uuid', path).then((uuid) => {
