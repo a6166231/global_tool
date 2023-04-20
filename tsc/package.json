@@ -21,6 +21,11 @@
             },
             {
                 "path": "www",
+                "label": "tsc-no-filter",
+                "message": "start-build-no-filter"
+            },
+            {
+                "path": "www",
                 "label": "tsc-open",
                 "message": "start-build-open"
             }
@@ -29,6 +34,11 @@
             "start-build": {
                 "methods": [
                     "startBuildTs"
+                ]
+            },
+            "start-build-no-filter": {
+                "methods": [
+                    "startBuildNoFilter"
                 ]
             },
             "start-build-open": {

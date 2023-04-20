@@ -6,6 +6,11 @@ import path from 'path';
 var bIsRunning: boolean = false;
 var bakUpUrl: string[] = [];
 
+var filterList: string[] = [
+    'protocol',
+    'extensions'
+];
+
 var tsCfg: string;
 
 var updateTsConfig = async function (status: boolean) {
@@ -52,26 +57,42 @@ var writeTsConfig = async function (data: string) {
     return await fs.writeFileSync(path.join(Editor.Project.path, 'tsconfig.json'), data, 'utf-8');
 }
 
-var tsc_b = async function () {
+var tsc_b = async function (bFilter: boolean = true) {
     if (bIsRunning) return;
     await updateTsConfig(true);
     bakUpUrl = [];
     bIsRunning = true;
-    let cmd = 'tsc -b ' + Editor.Project.path
+    let cmd = 'tsc -p ' + Editor.Project.path
     console.log('- start -')
     exec(cmd, async (err, stdout, stderr) => {
+        console.log('======================')
         let out = stdout.split('\n');
-        for (let info of out) {
-            formatErrorInfo(info)
+
+        if (bFilter) {
+            for (let info of out) {
+                if (checkFilter(info))
+                    formatErrorInfo(info)
+            }
+        } else {
+            for (let info of out) {
+                formatErrorInfo(info)
+            }
         }
-        bIsRunning = false;
         console.log('total :', bakUpUrl.length)
         await updateTsConfig(false);
+        bIsRunning = false;
         console.log('- over -')
 
         // console.log('\x1B[32m%s\x1B[0m', 'success')
-        // console.log('%c在这个符号后的信息是红色','color: green')
+        // console.log('%c在这个符号后的信息是红色','color: red')
     })
+}
+
+var checkFilter = function (info: string) {
+    for (let f of filterList) {
+        if (info.indexOf(f) >= 0) return false;
+    }
+    return true;
 }
 
 /**
@@ -80,7 +101,10 @@ var tsc_b = async function () {
  */
 export const methods: { [key: string]: (...any: any) => any } = {
     startBuildTs() {
-        tsc_b()
+        tsc_b();
+    },
+    startBuildNoFilter() {
+        tsc_b(false);
     },
     async startBuildTsAndOpen() {
         if (bakUpUrl.length == 0) {
@@ -103,7 +127,7 @@ var formatErrorInfo = async function (data: string) {
     bakPath = path = data.slice(0, indexOf);
 
     let lineIndex = path.indexOf('(');
-    if (data.indexOf('error') >= 0 && lineIndex >= 0 && path.indexOf(')')) {
+    if (data.indexOf(PPATH) == 0 && data.indexOf('error') >= 0 && lineIndex >= 0 && path.indexOf(')')) {
         let p = path.slice(0, lineIndex)
         p = p.replace(PPATH, 'db:/')
         bakUpUrl.push(p);
@@ -113,10 +137,12 @@ var formatErrorInfo = async function (data: string) {
 
         path = `(file:///${path})`
     } else {
+        return
         path = '&emsp;-' + path;
     }
     data = data.replace(bakPath, path)
     console.log(`${data}`)
+
 }
 
 var PPATH: string;
