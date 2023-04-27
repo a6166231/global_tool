@@ -18,7 +18,7 @@ var tsCfg;
 var updateTsConfig = async function (status) {
     return new Promise(async (resolve, reject) => {
         const cfgPath = path_1.default.join(Editor.Project.path, 'tsconfig.json');
-        console.log('cfgpath : ', cfgPath);
+        // console.log('cfgpath : ', cfgPath)
         if (status) {
             fs_1.default.readFile(cfgPath, 'utf-8', async (err, data) => {
                 if (!err) {
