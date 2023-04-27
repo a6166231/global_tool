@@ -130,7 +130,12 @@ var formatErrorInfo = async function (data: string) {
     if (data.indexOf(PPATH) == 0 && data.indexOf('error') >= 0 && lineIndex >= 0 && path.indexOf(')')) {
         let p = path.slice(0, lineIndex)
         p = p.replace(PPATH, 'db:/')
-        bakUpUrl.push(p);
+        //@ts-ignore
+        if (!bakUpUrl[p]) {
+            //@ts-ignore
+            bakUpUrl[p] = p;
+            bakUpUrl.push(p);
+        }
 
         let lineS = path.slice(lineIndex + 1, path.length - 1);
         path = path.slice(0, lineIndex) + ':' + lineS.split(',').join(':')

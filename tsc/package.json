@@ -5,7 +5,8 @@
     "description": "i18n:tsc.description",
     "main": "./dist/main.js",
     "dependencies": {
-        "fs-extra": "^10.1.0"
+        "fs-extra": "^10.1.0",
+        "tsc": "^2.0.4"
     },
     "devDependencies": {
         "@types/fs-extra": "^9.0.5",
