@@ -139,8 +139,8 @@ var formatErrorInfo = async function (data: string) {
 
         let lineS = path.slice(lineIndex + 1, path.length - 1);
         path = path.slice(0, lineIndex) + ':' + lineS.split(',').join(':')
-
-        path = `(file:///${path})`
+        path = path.replace(new RegExp('/','g'),'\\')
+        path = `{link(${path})}`
     } else {
         return
         path = '&emsp;-' + path;
