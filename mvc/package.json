@@ -1,0 +1,51 @@
+{
+    "package_version": 2,
+    "version": "1.0.0",
+    "name": "mvc",
+    "description": "i18n:mvc.description",
+    "main": "./dist/main.js",
+    "dependencies": {
+        "fs-extra": "^10.0.0",
+        "path": "^0.12.7"
+    },
+    "devDependencies": {
+        "@types/fs-extra": "^9.0.5",
+        "@types/node": "^16.0.1",
+        "typescript": "^4.3.4"
+    },
+    "panels": {
+        "default": {
+            "title": "mvc Default Panel",
+            "type": "dockable",
+            "main": "dist/panels/default",
+            "size": {
+                "min-width": 800,
+                "min-height": 720,
+                "width": 800,
+                "height": 720
+            }
+        }
+    },
+    "contributions": {
+        "menu": [
+            {
+                "path": "mvc",
+                "label": "open",
+                "message": "open-mvc-panel"
+            }
+        ],
+        "messages": {
+            "open-mvc-panel": {
+                "methods": [
+                    "openMVCPanel"
+                ]
+            }
+        }
+    },
+    "author": "www",
+    "editor": ">=3.7.3",
+    "scripts": {
+        "build": "tsc -b",
+        "watch": "tsc -w"
+    }
+}
