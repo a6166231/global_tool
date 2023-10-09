@@ -1,5 +1,7 @@
 # global_tool
 
+依赖于cocos creator编辑器实现的插件
+
 ## mvc ##
 
 - 基于mvc模板生成对应的mvc子类、零件
