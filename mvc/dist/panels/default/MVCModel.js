@@ -7,4 +7,5 @@ var MVCModelName;
     MVCModelName["Proxy"] = "proxy";
     MVCModelName["Layer"] = "layer";
     MVCModelName["Model"] = "model";
+    MVCModelName["Prefab"] = "prefab";
 })(MVCModelName = exports.MVCModelName || (exports.MVCModelName = {}));

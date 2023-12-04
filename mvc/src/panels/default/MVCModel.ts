@@ -2,13 +2,14 @@ import { ScriptDataModel } from "../../main";
 import { LinkItem } from "./ui/linkItem";
 
 export interface MVCModel {
-    model?: ScriptItem,
-    layer?: ScriptItem,
-    mediator?: ScriptItem,
-    proxy?: ScriptItem,
+    model?: AssetItem,
+    layer?: AssetItem,
+    mediator?: AssetItem,
+    proxy?: AssetItem,
+    prefab?: AssetItem,
 }
 
-export interface ScriptItem {
+export interface AssetItem {
     name: string,
     path: string,
     constAppend?: boolean,
@@ -27,4 +28,5 @@ export enum MVCModelName {
     Proxy = 'proxy',
     Layer = 'layer',
     Model = 'model',
+    Prefab = 'prefab',
 }

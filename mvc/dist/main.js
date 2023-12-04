@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.collectFilesfunc = exports.collectAllExtendsClass = exports.unload = exports.load = exports.methods = exports.getTemplateList = void 0;
+exports.collectFilesfunc = exports.collectAllExtendsClass = exports.unload = exports.load = exports.methods = exports.getTemplateList = exports.TemplateType = void 0;
 // @ts-ignore
 const package_json_1 = __importDefault(require("../package.json"));
 const path_1 = __importDefault(require("path"));
@@ -11,6 +11,11 @@ const fs_1 = __importDefault(require("fs"));
 const MVCModel_1 = require("./panels/default/MVCModel");
 const util_1 = __importDefault(require("./panels/default/util"));
 const { promisify } = require('util');
+var TemplateType;
+(function (TemplateType) {
+    TemplateType[TemplateType["script"] = 0] = "script";
+    TemplateType[TemplateType["prefab"] = 1] = "prefab";
+})(TemplateType = exports.TemplateType || (exports.TemplateType = {}));
 let templateList = [
     {
         name: MVCModel_1.MVCModelName.Mediator,
@@ -18,19 +23,29 @@ let templateList = [
         outPath: 'db://assets/scripts/game/mediator/',
         autoPath: true,
         link: MVCModel_1.MVCModelName.Layer,
+        type: TemplateType.script,
     },
     {
         name: MVCModel_1.MVCModelName.Layer,
         classPath: 'db://assets/scripts/game/view/BaseUINode.ts',
-        outPath: 'db://assets/scripts/game/view/',
+        outPath: 'db://assets/scripts/game/view/layersui/',
         autoPath: true,
         appendPath: '_layer',
+        type: TemplateType.script,
     },
     {
         name: MVCModel_1.MVCModelName.Proxy,
         classPath: 'db://assets/scripts/game/proxy/RemoteProxy.ts',
-        outPath: 'db://assets/scripts/game/proxy/',
+        outPath: 'db://assets/scripts/game/proxy/remote/',
         link: MVCModel_1.MVCModelName.Model,
+        type: TemplateType.script,
+    },
+    {
+        name: MVCModel_1.MVCModelName.Prefab,
+        outPath: 'db://assets/resources/prefab/game/',
+        appendPath: '_layer',
+        autoPath: true,
+        type: TemplateType.prefab,
     },
 ];
 function getTemplateList() {
@@ -62,7 +77,7 @@ function unload() {
 exports.unload = unload;
 let collectAllExtendsClass = async function (mapScript, layerScript = new Map) {
     let layer = templateList.find(item => { return item.name == MVCModel_1.MVCModelName.Layer; });
-    if (!layer)
+    if (!layer || !layer.classPath)
         return new Map;
     let name = path_1.default.basename(layer.classPath).replace('.ts', "");
     let layerList = await Editor.Message.request("scene", "query-classes", { extends: name });

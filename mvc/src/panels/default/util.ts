@@ -1,7 +1,4 @@
-const Path = require('path');
 import Fs from 'fs';
-import { getTemplateList } from '../../main';
-import { MVCModelName } from './MVCModel';
 
 export default class Utils {
     /**

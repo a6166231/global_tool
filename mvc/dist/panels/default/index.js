@@ -32,8 +32,10 @@ const main_1 = require("../../main");
 const util_1 = __importDefault(require("./util"));
 module.paths.push((0, path_1.join)(Editor.App.path, 'node_modules'));
 const wtemplate_1 = require("./wtemplate");
+const MVCModel_1 = require("./MVCModel");
 const mvc_1 = require("./mvc");
 const linkItem_1 = require("./ui/linkItem");
+const pathLockItem_1 = require("./ui/pathLockItem");
 const BaseID = "id";
 let mapTemplateScript = new Map;
 let mapSelect2ScriptItem = new Map;
@@ -55,6 +57,7 @@ module.exports = Editor.Panel.define({
         scriptName: '#scriptName',
         classesPanel: '#classesPanel',
         scriptItem: '#scriptItem',
+        prefabItem: '#prefabItem',
         btnCreate: '#btnCreate',
         mainCode: "#mainCode",
     },
@@ -67,35 +70,43 @@ module.exports = Editor.Panel.define({
             this.refreshScriptInfo();
         },
         createUIAssetItem(data, iindex) {
-            if (!this.$.classesPanel || !this.$.scriptItem)
+            if (!this.$.classesPanel || !this.$.scriptItem || !this.$.prefabItem)
                 return;
-            let item = this.$.scriptItem.cloneNode(true);
+            const bScript = data.type == main_1.TemplateType.script;
+            let item = (bScript ? this.$.scriptItem.cloneNode(true) : this.$.prefabItem.cloneNode(true));
             let modelName = util_1.default.getClsNameElement(item, 'modelName');
             //@ts-ignore
             modelName.value = data.name + ': ';
             modelName.style.width = `100px`;
             let asset = util_1.default.getTagNameElement(item, 'ui-asset');
-            //@ts-ignore
-            asset.value = data.classPath;
-            if (iindex == 1)
-                asset.removeAttribute("readonly");
+            if (asset && data.classPath) {
+                //@ts-ignore
+                asset.value = data.classPath;
+                if (iindex == 1)
+                    asset.removeAttribute("readonly");
+            }
             let itemName = util_1.default.getClsNameElement(item, 'layerName');
             itemName.onkeyup = () => {
                 this.checkItemName(itemName);
-                this.previewTempResult(iindex);
+                bScript && this.previewTempResult(iindex);
             };
             let file = util_1.default.getTagNameElement(item, 'ui-file');
+            bScript && (file.onkeyup = () => {
+                this.previewTempResult(iindex);
+            });
             //@ts-ignore
             file.value = data.outPath.replace(dbHead, projectHead);
             if (data.link) {
                 let clsSelect = util_1.default.getClsNameElement(item, 'LinkItem');
-                clsSelect.hidden = false;
-                _vLinkItem[iindex] = new linkItem_1.LinkItem(clsSelect, data, this.refreshScriptInfo.bind(this));
+                if (clsSelect) {
+                    clsSelect.hidden = false;
+                    _vLinkItem[iindex] = new linkItem_1.LinkItem(clsSelect, data, this.refreshScriptInfo.bind(this));
+                }
             }
             this.$.classesPanel.appendChild(item);
-            item.onclick = () => {
+            bScript && (item.onclick = () => {
                 this.previewTempResult(iindex);
-            };
+            });
             return item;
         },
         /** 根据模板生成功能列表 */
@@ -111,13 +122,17 @@ module.exports = Editor.Panel.define({
                     console.warn('-- create template faild: ', util_1.default.Obj2String(template));
                     continue;
                 }
+                let clsSelect = util_1.default.getClsNameElement(input2Item, 'btnLock');
+                clsSelect.hidden = false;
+                let lockItem = new pathLockItem_1.pathLockItem(clsSelect, this.refreshScriptInfo.bind(this));
                 let input = document.createElement("input");
                 input.type = 'checkbox';
                 input.checked = true;
                 input.id = `${BaseID}${template.name}`;
                 input.name = template.name;
                 input.tabIndex = iindex;
-                mapSelect2ScriptItem.set(iindex, { item: input2Item, data: template });
+                let model = { item: input2Item, data: template, lockItem: lockItem };
+                mapSelect2ScriptItem.set(iindex, model);
                 input.onclick = () => {
                     this.onCheckBoxClick(iindex, input.checked);
                 };
@@ -135,6 +150,8 @@ module.exports = Editor.Panel.define({
             let templateList = (0, main_1.getTemplateList)();
             const assetTempPath = path_1.default.join(Editor.Project.path, '.creator/asset-template/typescript');
             for (let template of templateList) {
+                if (!template.classPath)
+                    continue;
                 let baseName = path_1.default.basename(template.classPath);
                 let tempLatePath = baseName.replace(path_1.default.extname(baseName), '');
                 util_1.default.readFile(path_1.default.join(assetTempPath, tempLatePath)).then(res => {
@@ -154,14 +171,19 @@ module.exports = Editor.Panel.define({
                 //文件名
                 let itemName = util_1.default.getClsNameElement(v.item, 'layerName');
                 if (itemName) {
+                    let nameData = v.data.name;
+                    if (v.data.type == main_1.TemplateType.prefab) {
+                        nameData = MVCModel_1.MVCModelName.Layer;
+                    }
+                    let extendsName = nameData[0].toUpperCase() + nameData.slice(1);
                     //@ts-ignore
-                    itemName.value = `${nameVal}${v.data.name[0].toUpperCase() + v.data.name.slice(1)}`;
+                    itemName.value = `${nameVal}${extendsName}`;
                     this.checkItemName(itemName);
                 }
                 //文件路径
                 let itemPath = util_1.default.getTagNameElement(v.item, 'ui-file');
                 if (itemPath) {
-                    if (v.data.autoPath) {
+                    if (v.data.autoPath && !v.lockItem.status) {
                         //@ts-ignore
                         itemPath.value = path_1.default.join(v.data.outPath.replace(dbHead, ""), `${wtemplate_1.wtemplate.formatHumpName(nameVal) + (v.data.appendPath || "")}`);
                     }
@@ -238,12 +260,14 @@ module.exports = Editor.Panel.define({
             let has = util_1.default.existsSync(path_1.default.join(Editor.Project.path, path.replace(projectHead, '')));
             itemName.style.color = has ? 'yellow' : 'mediumspringgreen';
         },
-        readyCreateScripts() {
+        /** 准备导出资源 */
+        readyCreateAssets() {
             let name = this.$.scriptName;
             if (!name)
                 return;
             let faild = false;
             let vReadyScripts = [];
+            let vReadyPrefabs = [];
             //@ts-ignore
             if (name.value && name.value.length) {
                 for (let [k, v] of mapSelect2ScriptItem) {
@@ -255,7 +279,12 @@ module.exports = Editor.Panel.define({
                         faild = true;
                         break;
                     }
-                    vReadyScripts.push(v);
+                    if (v.data.type == main_1.TemplateType.script) {
+                        vReadyScripts.push(v);
+                    }
+                    else {
+                        vReadyPrefabs.push(v);
+                    }
                 }
             }
             if (faild) {
@@ -264,6 +293,8 @@ module.exports = Editor.Panel.define({
             }
             if (vReadyScripts.length)
                 this.syncCreateScripts(vReadyScripts);
+            if (vReadyPrefabs.length)
+                this.syncCreatePrefabs(vReadyPrefabs);
         },
         async getUserInfo() {
             if (!_userInfo) {
@@ -271,8 +302,28 @@ module.exports = Editor.Panel.define({
             }
             return _userInfo;
         },
+        /** 异步创建所有的预制体 */
+        async syncCreatePrefabs(vReadyPrefabs) {
+            console.log('2.create prefabs~~~~');
+            let count = 0;
+            for (let obj of vReadyPrefabs) {
+                let lb = util_1.default.getClsNameElement(obj.item, 'layerName');
+                let path = util_1.default.getTagNameElement(obj.item, 'ui-file');
+                //@ts-ignore
+                let ppath = path.value.replace(projectHead, dbHead);
+                //@ts-ignore
+                console.log(path.value);
+                //@ts-ignore
+                await util_1.default.createFile(ppath + '/' + lb.value + '.prefab', await wtemplate_1.wtemplate.formatPrefab(lb.value)).catch((err) => {
+                    console.warn(err);
+                });
+                count++;
+            }
+            console.log('2-2.create prefabs end~~~~');
+        },
+        /** 异步创建所有的脚本 */
         async syncCreateScripts(vReadyScripts) {
-            console.log('create scripts~~~~');
+            console.log('1.create scripts~~~~');
             let userInfo = await this.getUserInfo();
             let count = 0;
             for (let obj of vReadyScripts) {
@@ -281,12 +332,14 @@ module.exports = Editor.Panel.define({
                 //@ts-ignore
                 let ppath = path.value.replace(projectHead, dbHead);
                 //@ts-ignore
+                console.log(path.value);
+                //@ts-ignore
                 await util_1.default.createFile(ppath + '/' + lb.value + '.ts', await this.formatScriptTemplate(ppath, lb.value, obj.data, userInfo)).catch((err) => {
                     console.warn(err);
                 });
                 count++;
             }
-            console.log('create scripts end~~~~');
+            console.log('1-1.create scripts end~~~~');
         },
         async previewTempResult(index) {
             this.refreshMVCModelData();
@@ -325,7 +378,7 @@ module.exports = Editor.Panel.define({
         },
         addListener() {
             this.$.scriptName && (this.$.scriptName.onkeyup = this.refreshScriptInfo.bind(this));
-            this.$.btnCreate && (this.$.btnCreate.onclick = this.readyCreateScripts.bind(this));
+            this.$.btnCreate && (this.$.btnCreate.onclick = this.readyCreateAssets.bind(this));
             mvc_1.mvc.messageMgr().setResChangeCall(this.refreshScriptInfo.bind(this));
         }
     },

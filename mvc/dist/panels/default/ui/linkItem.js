@@ -8,6 +8,24 @@ const MVCModel_1 = require("../MVCModel");
 const mvc_1 = require("../mvc");
 const util_1 = __importDefault(require("../util"));
 class LinkItem {
+    get status() {
+        return this._status;
+    }
+    get selected() {
+        return this._link.value;
+    }
+    set hidden(status) {
+        this._item.hidden = status;
+    }
+    get hidden() {
+        return this._item.hidden;
+    }
+    set dropLinkHiddent(status) {
+        this._link.hidden = status;
+    }
+    get dropLinkHiddent() {
+        return this._link.hidden;
+    }
     constructor(item, data, changeCall) {
         this._status = true;
         this._item = {};
@@ -29,24 +47,6 @@ class LinkItem {
         this.initLinkList();
         this.refreshSelect();
         this.addListener();
-    }
-    get status() {
-        return this._status;
-    }
-    get selected() {
-        return this._link.value;
-    }
-    set hidden(status) {
-        this._item.hidden = status;
-    }
-    get hidden() {
-        return this._item.hidden;
-    }
-    set dropLinkHiddent(status) {
-        this._link.hidden = status;
-    }
-    get dropLinkHiddent() {
-        return this._link.hidden;
     }
     refreshSelect() {
         this._select.hidden = !this._status;

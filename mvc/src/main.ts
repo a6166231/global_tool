@@ -7,9 +7,14 @@ import Utils from './panels/default/util';
 import { AssetInfo } from '../@types/packages/asset-db/@types/public';
 const { promisify } = require('util');
 
+export enum TemplateType {
+    script,
+    prefab,
+}
+
 export interface TemplateModel {
     name: MVCModelName,
-    classPath: string,
+    classPath?: string,
     /** 输出路径 */
     outPath: string,
     /** 是否需要自动生成文件路径 */
@@ -18,6 +23,8 @@ export interface TemplateModel {
     link?: MVCModelName,
     /** 路径拼接字段 */
     appendPath?: string,
+
+    type: TemplateType,
 }
 
 export interface ScriptDataModel {
@@ -33,19 +40,29 @@ let templateList: TemplateModel[] = [
         outPath: 'db://assets/scripts/game/mediator/',
         autoPath: true,
         link: MVCModelName.Layer,
+        type: TemplateType.script,
     },
     {
         name: MVCModelName.Layer,
         classPath: 'db://assets/scripts/game/view/BaseUINode.ts',
-        outPath: 'db://assets/scripts/game/view/',
+        outPath: 'db://assets/scripts/game/view/layersui/',
         autoPath: true,
         appendPath: '_layer',
+        type: TemplateType.script,
     },
     {
         name: MVCModelName.Proxy,
         classPath: 'db://assets/scripts/game/proxy/RemoteProxy.ts',
-        outPath: 'db://assets/scripts/game/proxy/',
+        outPath: 'db://assets/scripts/game/proxy/remote/',
         link: MVCModelName.Model,
+        type: TemplateType.script,
+    },
+    {
+        name: MVCModelName.Prefab,
+        outPath: 'db://assets/resources/prefab/game/',
+        appendPath: '_layer',
+        autoPath: true,
+        type: TemplateType.prefab,
     },
 ];
 
@@ -78,9 +95,9 @@ export async function load() {
 export function unload() {
 }
 
-export let collectAllExtendsClass = async function (mapScript: Map<string, ScriptDataModel | string>, layerScript: Map<string, string> = new Map):Promise<Map<string, string>> {
+export let collectAllExtendsClass = async function (mapScript: Map<string, ScriptDataModel | string>, layerScript: Map<string, string> = new Map): Promise<Map<string, string>> {
     let layer = templateList.find(item => { return item.name == MVCModelName.Layer });
-    if (!layer) return new Map;
+    if (!layer || !layer.classPath) return new Map;
     let name = Path.basename(layer.classPath).replace('.ts', "")
     let layerList = await Editor.Message.request("scene", "query-classes", { extends: name })
     for (let item of layerList) {
@@ -94,7 +111,7 @@ export let collectAllExtendsClass = async function (mapScript: Map<string, Scrip
 /**
  * 收集项目中的文件信息
  */
-export let collectFilesfunc = async function (mapScript: Map<string, ScriptDataModel | string> = new Map, modelScript: Map<string, string> = new Map): Promise< [Map<string, ScriptDataModel | string>, Map<string, string>]> {
+export let collectFilesfunc = async function (mapScript: Map<string, ScriptDataModel | string> = new Map, modelScript: Map<string, string> = new Map): Promise<[Map<string, ScriptDataModel | string>, Map<string, string>]> {
     // 文件处理函数
     const handler = async (path: string) => {
         // 过滤

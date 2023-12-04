@@ -1,7 +1,8 @@
 import path from "path";
 import { TemplateModel } from "../../main";
-import { MVCModel, MVCModelName, ScriptItem, ScriptLinkModel } from "./MVCModel";
+import { AssetItem, MVCModel, MVCModelName, ScriptLinkModel } from "./MVCModel";
 import Utils from "./util";
+import packageJSON from '../../../package.json';
 
 export enum TemplateStr {
     Author = '<%Author%>',
@@ -24,6 +25,8 @@ export enum TemplateStr {
     IndexStr = "<%IndexStr%>",
 
     SelectDivStr = "<%SelectDivStr%>",
+
+    PrefabTemplate = "PrefabTemplate",
 }
 
 export const TemplateScriptMap = {
@@ -49,21 +52,20 @@ export const TemplateScriptMap = {
 
     /** 请求 */
     proxyRequest: `
-    public ${TemplateStr.ProxyReq}(...p: any) {
-        this.model.send${TemplateStr.IndexStr}.bind(this.model, ...p)();
+    public ${TemplateStr.ProxyReq}() {
+        this.model.send${TemplateStr.IndexStr}();
     }`,
     /** 返回 */
     proxyResponse: `
     public on${TemplateStr.ProxyRes}(cmd: number, data: ${TemplateStr.ProxyRes}) {
-        console.log('--------- ${TemplateStr.ProxyRes}', cmd);
+        console.log('--------- ${TemplateStr.ProxyRes}', cmd, data);
     }`,
 
     noticeStr: `
-    public RegisterNotification(callMap: Map<string, DisposeHandle>): void {
+    public RegisterNotification(callMap: Map<NoticeTable, DisposeHandle>): void {
         callMap.set(Global.NTable.Layer_${TemplateStr.InterfaceClassName}_Open, this.OpenLayer);
         callMap.set(Global.NTable.Layer_${TemplateStr.InterfaceClassName}_Close, this.CloseLayer);
-    }
-    `
+    }`
 }
 
 export type FormatParam = {
@@ -75,6 +77,7 @@ export type FormatParam = {
 }
 
 export class wtemplate {
+
     public static async format(str: string = "", param: FormatParam): Promise<String> {
         if (!str || str.length == 0) return str;
         str = this.formatStrByTemplate(str, param.scriptName, TemplateStr.ClassName);
@@ -85,12 +88,19 @@ export class wtemplate {
         return str;
     }
 
+    public static async formatPrefab(fname: string) {
+        let prefab = await Utils.readFile(path.join(Editor.Package.getPath(packageJSON.name) || '', 'src/prefab/PrefabTemplate.prefab'))
+        prefab = this.formatStrByTemplate(prefab, TemplateStr.PrefabTemplate, fname)
+        return prefab;
+    }
+
     public static formatStrByTemplate(str: string, tar: string, type: string) {
         return str.replace(new RegExp(type, 'g'), tar);
     }
 
     public static async formatClassInterface(str: string, param: FormatParam) {
         let model = param.model
+        if (!model.classPath) return str;
         let extendsCls = path.basename(model.classPath).replace('.ts', '');
         switch (model.name) {
             case MVCModelName.Mediator:
@@ -121,7 +131,7 @@ export class wtemplate {
                 let index = str.indexOf('public RegisterNotification');
                 if (index >= 0) {
                     str = str.slice(0, index) + this.formatNoticeListener(linkObj.script.trueName);
-                    str += '}'
+                    str += '\n}'
                 }
             }
         } else {
@@ -139,7 +149,7 @@ export class wtemplate {
                 let index = str.indexOf('public RegisterNotification');
                 if (index >= 0) {
                     str = str.slice(0, index) + this.formatNoticeListener(mvc.layer.name);
-                    str += '}'
+                    str += '\n}'
                 }
             }
         }
@@ -147,7 +157,7 @@ export class wtemplate {
         return str;
     }
 
-    private static async _formatProxy(str: string, param: FormatParam, proxy: ScriptItem | undefined, extendsCls: string) {
+    private static async _formatProxy(str: string, param: FormatParam, proxy: AssetItem | undefined, extendsCls: string) {
         let constructorStr = `super(${param.scriptName}.NAME)`
         //proxy 绑定 model
         let linkObj = proxy?.link

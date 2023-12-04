@@ -22,10 +22,10 @@
         </p>
 
         <div id="prefabs" hidden="true">
-            <ui-prop style="width: 100%;" id="scriptItem">
+            <ui-prop id="scriptItem">
                 <table>
                     <tr>
-                        <td>
+                        <td style="width: 100px;">
                             <ui-label class="modelName" value="model: "></ui-label>
                         </td>
                         <td>
@@ -62,7 +62,6 @@
                                     <div class="scriptLink" style="height: 5px; display: flex;">
                                         <tr>
                                             <ui-select></ui-select>
-                                            <!-- <ui-button class="transparent icon-button red" loading></ui-button> -->
                                         </tr>
                                     </div>
                                 </table>
@@ -72,7 +71,58 @@
                             <ui-label value="path:"></ui-label>
                         </td>
                         <td colspan="3">
+                            <ui-file type="directory" value=""></ui-file>
+                            <span class="btnLock" style="width: 5%;height: 100%;">
+                                <span>
+                                    <ui-button class="transparent icon-button green">
+                                        <ui-icon style="transform: scale(1.5);" value="lock" class="lock">
+                                        </ui-icon>
+                                    </ui-button>
+                                </span>
+                                <span>
+                                    <ui-button class="transparent icon-button">
+                                        <ui-icon style="transform: scale(1.5);" value="unlock" class="lock">
+                                        </ui-icon>
+                                    </ui-button>
+                                </span>
+                            </span>
+                        </td>
+                    </tr>
+                </table>
+            </ui-prop>
+            <ui-prop id="prefabItem">
+                <table style="width: 95%;">
+                    <tr>
+                        <td style="width: 100px;">
+                            <ui-label class="modelName" value="model: "></ui-label>
+                        </td>
+                        <td style="width: 45;">
+                            <ui-label style="color:royalblue;">name</ui-label>
+                        </td>
+                        <td>
+                            <input style="width: 100%;" type="text" class="layerName" value="text">
+                        </td>
+                    </tr>
+                    <tr class="tr2">
+                        <td>
+                            <ui-label value="path:"></ui-label>
+                        </td>
+                        <td colspan="2">
                             <ui-file type="directory" value="project://assets/test"></ui-file>
+                            <span class="btnLock" style="width: 5%;height: 100%;">
+                                <span>
+                                    <ui-button class="transparent icon-button green">
+                                        <ui-icon style="transform: scale(1.5);" value="lock" class="lock">
+                                        </ui-icon>
+                                    </ui-button>
+                                </span>
+                                <span>
+                                    <ui-button class="transparent icon-button">
+                                        <ui-icon style="transform: scale(1.5);" value="unlock" class="lock">
+                                        </ui-icon>
+                                    </ui-button>
+                                </span>
+                            </span>
                         </td>
                     </tr>
                 </table>

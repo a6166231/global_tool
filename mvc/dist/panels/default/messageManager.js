@@ -45,37 +45,39 @@ class MessageManager extends singleton_1.singleton {
     /** p1暂时不知道是作什么用的 */
     resAdd(p1, p2, p3) {
         //是ts类型的
-        if (p2.importer != 'typescript')
-            return;
-        this.setMapScriptItem(p2.uuid, p2.name, p2.path);
-        this.triggerListener(ResBroadcast.Add);
+        if (p2.importer == 'typescript') {
+            this.setMapScriptItem(p2.uuid, p2.name, p2.path);
+            this.triggerListener(ResBroadcast.Add);
+        }
     }
     /** p1暂时不知道是作什么用的
      * 文件修改名字或者内容更新都会走change消息
     */
     resChange(p1, p2, p3) {
         //是ts类型的
-        if (p2.importer != 'typescript')
-            return;
-        let has = mvc_1.mvc.scriptMgr().getScript(p2.uuid);
-        if (!has) {
-            this.setMapScriptItem(p2.uuid, p2.name, p2.file);
-        }
-        else {
-            if (has.name != p2.name) { //文件名改了 先把旧名字的删掉
-                this.delMapScriptItem(p2.uuid, has.name);
-                this.setMapScriptItem(p2.uuid, p2.name, p2.path);
+        if (p2.importer == 'typescript') {
+            let has = mvc_1.mvc.scriptMgr().getScript(p2.uuid);
+            if (!has) {
+                this.setMapScriptItem(p2.uuid, p2.name, p2.file);
             }
+            else {
+                if (has.name != p2.name) { //文件名改了 先把旧名字的删掉
+                    this.delMapScriptItem(p2.uuid, has.name);
+                    this.setMapScriptItem(p2.uuid, p2.name, p2.path);
+                }
+            }
+            this.triggerListener(ResBroadcast.Change);
         }
-        this.triggerListener(ResBroadcast.Change);
+        ;
     }
     /** p1暂时不知道是作什么用的 */
     resDel(p1, p2, p3) {
         //是ts类型的
-        if (p2.importer != 'typescript')
-            return;
-        this.delMapScriptItem(p2.uuid, p2.name);
-        this.triggerListener(ResBroadcast.Delete);
+        if (p2.importer == 'typescript') {
+            this.delMapScriptItem(p2.uuid, p2.name);
+            this.triggerListener(ResBroadcast.Delete);
+        }
+        ;
     }
     setMapScriptItem(uuid, name, path) {
         mvc_1.mvc.scriptMgr().setScript(uuid, name.replace('.ts', ''), path);

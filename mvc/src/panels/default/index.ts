@@ -1,13 +1,14 @@
 import { readFileSync } from 'fs-extra';
 import Path, { join } from 'path';
-import { ScriptDataModel, TemplateModel, collectAllExtendsClass, collectFilesfunc, getTemplateList } from '../../main';
+import { ScriptDataModel, TemplateModel, TemplateType, collectAllExtendsClass, collectFilesfunc, getTemplateList } from '../../main';
 import Utils from './util';
 module.paths.push(join(Editor.App.path, 'node_modules'));
 
 import { wtemplate } from './wtemplate';
-import { MVCModel, ScriptItem } from './MVCModel';
+import { AssetItem, MVCModel, MVCModelName } from './MVCModel';
 import { mvc } from './mvc';
 import { LinkItem } from './ui/linkItem';
+import { pathLockItem } from './ui/pathLockItem';
 
 /**
  * @zh 如果希望兼容 3.3 之前的版本可以使用下方的代码
@@ -19,6 +20,7 @@ interface IScriptItemModel {
     item: HTMLElement,
     data: TemplateModel,
     link?: IScriptItemModel,
+    lockItem: pathLockItem,
 }
 
 const BaseID = "id"
@@ -48,6 +50,7 @@ module.exports = Editor.Panel.define({
         scriptName: '#scriptName',
         classesPanel: '#classesPanel',
         scriptItem: '#scriptItem',
+        prefabItem: '#prefabItem',
         btnCreate: '#btnCreate',
         mainCode: "#mainCode",
     },
@@ -59,37 +62,46 @@ module.exports = Editor.Panel.define({
             this.refreshScriptInfo();
         },
         createUIAssetItem(data: TemplateModel, iindex: number) {
-            if (!this.$.classesPanel || !this.$.scriptItem) return;
-            let item = this.$.scriptItem.cloneNode(true) as HTMLElement;
+            if (!this.$.classesPanel || !this.$.scriptItem || !this.$.prefabItem) return;
+            const bScript = data.type == TemplateType.script
+            let item = (bScript ? this.$.scriptItem.cloneNode(true) : this.$.prefabItem.cloneNode(true)) as HTMLElement;
             let modelName = Utils.getClsNameElement(item, 'modelName');
             //@ts-ignore
             modelName.value = data.name + ': ';
             modelName.style.width = `100px`;
 
             let asset = Utils.getTagNameElement(item, 'ui-asset');
-            //@ts-ignore
-            asset.value = data.classPath
-            if (iindex == 1)
-                asset.removeAttribute("readonly")
+            if (asset && data.classPath) {
+                //@ts-ignore
+                asset.value = data.classPath
+                if (iindex == 1)
+                    asset.removeAttribute("readonly")
+            }
 
             let itemName = Utils.getClsNameElement(item, 'layerName');
             itemName.onkeyup = () => {
                 this.checkItemName(itemName);
-                this.previewTempResult(iindex)
+                bScript && this.previewTempResult(iindex)
             }
 
             let file = Utils.getTagNameElement(item, 'ui-file')
+            bScript && (file.onkeyup = () => {
+                this.previewTempResult(iindex)
+            })
+
             //@ts-ignore
             file.value = data.outPath.replace(dbHead, projectHead)
             if (data.link) {
                 let clsSelect = Utils.getClsNameElement(item, 'LinkItem');
-                clsSelect.hidden = false
-                _vLinkItem[iindex] = new LinkItem(clsSelect, data, this.refreshScriptInfo.bind(this))
+                if (clsSelect) {
+                    clsSelect.hidden = false
+                    _vLinkItem[iindex] = new LinkItem(clsSelect, data, this.refreshScriptInfo.bind(this))
+                }
             }
             this.$.classesPanel.appendChild(item)
-            item.onclick = () => {
+            bScript && (item.onclick = () => {
                 this.previewTempResult(iindex);
-            }
+            })
             return item;
         },
         /** 根据模板生成功能列表 */
@@ -105,13 +117,19 @@ module.exports = Editor.Panel.define({
                     continue;
                 }
 
+                let clsSelect = Utils.getClsNameElement(input2Item, 'btnLock');
+                clsSelect.hidden = false
+                let lockItem = new pathLockItem(clsSelect, this.refreshScriptInfo.bind(this))
+
                 let input = document.createElement("input");
                 input.type = 'checkbox'
                 input.checked = true;
                 input.id = `${BaseID}${template.name}`
                 input.name = template.name;
                 input.tabIndex = iindex;
-                mapSelect2ScriptItem.set(iindex, { item: input2Item, data: template })
+
+                let model: IScriptItemModel = { item: input2Item, data: template, lockItem: lockItem }
+                mapSelect2ScriptItem.set(iindex, model)
 
                 input.onclick = () => {
                     this.onCheckBoxClick(iindex, input.checked);
@@ -132,6 +150,7 @@ module.exports = Editor.Panel.define({
             let templateList = getTemplateList();
             const assetTempPath = Path.join(Editor.Project.path, '.creator/asset-template/typescript')
             for (let template of templateList) {
+                if (!template.classPath) continue;
                 let baseName = Path.basename(template.classPath)
                 let tempLatePath = baseName.replace(Path.extname(baseName), '');
 
@@ -151,15 +170,20 @@ module.exports = Editor.Panel.define({
                 //文件名
                 let itemName = Utils.getClsNameElement(v.item, 'layerName');
                 if (itemName) {
+                    let nameData = v.data.name;
+                    if (v.data.type == TemplateType.prefab) {
+                        nameData = MVCModelName.Layer;
+                    }
+                    let extendsName = nameData[0].toUpperCase() + nameData.slice(1)
                     //@ts-ignore
-                    itemName.value = `${nameVal}${v.data.name[0].toUpperCase() + v.data.name.slice(1)}`
+                    itemName.value = `${nameVal}${extendsName}`
                     this.checkItemName(itemName);
                 }
 
                 //文件路径
                 let itemPath = Utils.getTagNameElement(v.item, 'ui-file');
                 if (itemPath) {
-                    if (v.data.autoPath) {
+                    if (v.data.autoPath && !v.lockItem.status) {
                         //@ts-ignore
                         itemPath.value = Path.join(v.data.outPath.replace(dbHead, ""), `${wtemplate.formatHumpName(nameVal) + (v.data.appendPath || "")}`);
                     }
@@ -184,7 +208,7 @@ module.exports = Editor.Panel.define({
                 if (v.item.hidden) {
                     continue;
                 }
-                let obj: ScriptItem = {} as ScriptItem;
+                let obj: AssetItem = {} as AssetItem;
                 //文件名
                 let itemName = Utils.getClsNameElement(v.item, 'layerName');
                 if (itemName) {
@@ -240,12 +264,14 @@ module.exports = Editor.Panel.define({
             let has = Utils.existsSync(Path.join(Editor.Project.path, path.replace(projectHead, '')))
             itemName.style.color = has ? 'yellow' : 'mediumspringgreen';
         },
-        readyCreateScripts() {
+        /** 准备导出资源 */
+        readyCreateAssets() {
             let name = this.$.scriptName
             if (!name) return
 
             let faild = false;
             let vReadyScripts = []
+            let vReadyPrefabs = []
             //@ts-ignore
             if (name.value && name.value.length) {
                 for (let [k, v] of mapSelect2ScriptItem) {
@@ -258,7 +284,11 @@ module.exports = Editor.Panel.define({
                         break;
                     }
 
-                    vReadyScripts.push(v)
+                    if (v.data.type == TemplateType.script) {
+                        vReadyScripts.push(v)
+                    } else {
+                        vReadyPrefabs.push(v)
+                    }
                 }
             }
 
@@ -268,6 +298,8 @@ module.exports = Editor.Panel.define({
             }
             if (vReadyScripts.length)
                 this.syncCreateScripts(vReadyScripts);
+            if (vReadyPrefabs.length)
+                this.syncCreatePrefabs(vReadyPrefabs);
         },
         async getUserInfo() {
             if (!_userInfo) {
@@ -275,8 +307,28 @@ module.exports = Editor.Panel.define({
             }
             return _userInfo
         },
+        /** 异步创建所有的预制体 */
+        async syncCreatePrefabs(vReadyPrefabs: Array<{ item: HTMLElement, data: TemplateModel }>) {
+            console.log('2.create prefabs~~~~')
+            let count = 0;
+            for (let obj of vReadyPrefabs) {
+                let lb = Utils.getClsNameElement(obj.item, 'layerName');
+                let path = Utils.getTagNameElement(obj.item, 'ui-file');
+                //@ts-ignore
+                let ppath = path.value.replace(projectHead, dbHead)
+                //@ts-ignore
+                console.log(path.value)
+                //@ts-ignore
+                await Utils.createFile(ppath + '/' + lb.value + '.prefab', await wtemplate.formatPrefab(lb.value)).catch((err) => {
+                    console.warn(err)
+                })
+                count++;
+            }
+            console.log('2-2.create prefabs end~~~~')
+        },
+        /** 异步创建所有的脚本 */
         async syncCreateScripts(vReadyScripts: Array<{ item: HTMLElement, data: TemplateModel }>) {
-            console.log('create scripts~~~~')
+            console.log('1.create scripts~~~~')
 
             let userInfo = await this.getUserInfo()
 
@@ -287,12 +339,14 @@ module.exports = Editor.Panel.define({
                 //@ts-ignore
                 let ppath = path.value.replace(projectHead, dbHead)
                 //@ts-ignore
+                console.log(path.value)
+                //@ts-ignore
                 await Utils.createFile(ppath + '/' + lb.value + '.ts', await this.formatScriptTemplate(ppath, lb.value, obj.data, userInfo)).catch((err) => {
                     console.warn(err)
                 })
                 count++;
             }
-            console.log('create scripts end~~~~')
+            console.log('1-1.create scripts end~~~~')
         },
         async previewTempResult(index?: number) {
             this.refreshMVCModelData();
@@ -332,8 +386,7 @@ module.exports = Editor.Panel.define({
         },
         addListener() {
             this.$.scriptName && (this.$.scriptName.onkeyup = this.refreshScriptInfo.bind(this));
-            this.$.btnCreate && (this.$.btnCreate.onclick = this.readyCreateScripts.bind(this));
-
+            this.$.btnCreate && (this.$.btnCreate.onclick = this.readyCreateAssets.bind(this));
             mvc.messageMgr().setResChangeCall(this.refreshScriptInfo.bind(this));
         }
     },

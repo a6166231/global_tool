@@ -7,6 +7,7 @@ exports.wtemplate = exports.TemplateScriptMap = exports.TemplateStr = void 0;
 const path_1 = __importDefault(require("path"));
 const MVCModel_1 = require("./MVCModel");
 const util_1 = __importDefault(require("./util"));
+const package_json_1 = __importDefault(require("../../../package.json"));
 var TemplateStr;
 (function (TemplateStr) {
     TemplateStr["Author"] = "<%Author%>";
@@ -23,6 +24,7 @@ var TemplateStr;
     TemplateStr["ProxyResID"] = "<%ProxyResID%>";
     TemplateStr["IndexStr"] = "<%IndexStr%>";
     TemplateStr["SelectDivStr"] = "<%SelectDivStr%>";
+    TemplateStr["PrefabTemplate"] = "PrefabTemplate";
 })(TemplateStr = exports.TemplateStr || (exports.TemplateStr = {}));
 exports.TemplateScriptMap = {
     selectDiv: `<option value="${TemplateStr.SelectDivStr}">${TemplateStr.SelectDivStr}</option>`,
@@ -41,20 +43,19 @@ exports.TemplateScriptMap = {
     proxyConstructor2: `${TemplateStr.Constructor};`,
     /** 请求 */
     proxyRequest: `
-    public ${TemplateStr.ProxyReq}(...p: any) {
-        this.model.send${TemplateStr.IndexStr}.bind(this.model, ...p)();
+    public ${TemplateStr.ProxyReq}() {
+        this.model.send${TemplateStr.IndexStr}();
     }`,
     /** 返回 */
     proxyResponse: `
     public on${TemplateStr.ProxyRes}(cmd: number, data: ${TemplateStr.ProxyRes}) {
-        console.log('--------- ${TemplateStr.ProxyRes}', cmd);
+        console.log('--------- ${TemplateStr.ProxyRes}', cmd, data);
     }`,
     noticeStr: `
-    public RegisterNotification(callMap: Map<string, DisposeHandle>): void {
+    public RegisterNotification(callMap: Map<NoticeTable, DisposeHandle>): void {
         callMap.set(Global.NTable.Layer_${TemplateStr.InterfaceClassName}_Open, this.OpenLayer);
         callMap.set(Global.NTable.Layer_${TemplateStr.InterfaceClassName}_Close, this.CloseLayer);
-    }
-    `
+    }`
 };
 class wtemplate {
     static async format(str = "", param) {
@@ -67,11 +68,18 @@ class wtemplate {
         str = await this.formatClassInterface(str, param);
         return str;
     }
+    static async formatPrefab(fname) {
+        let prefab = await util_1.default.readFile(path_1.default.join(Editor.Package.getPath(package_json_1.default.name) || '', 'src/prefab/PrefabTemplate.prefab'));
+        prefab = this.formatStrByTemplate(prefab, TemplateStr.PrefabTemplate, fname);
+        return prefab;
+    }
     static formatStrByTemplate(str, tar, type) {
         return str.replace(new RegExp(type, 'g'), tar);
     }
     static async formatClassInterface(str, param) {
         let model = param.model;
+        if (!model.classPath)
+            return str;
         let extendsCls = path_1.default.basename(model.classPath).replace('.ts', '');
         switch (model.name) {
             case MVCModel_1.MVCModelName.Mediator:
@@ -100,7 +108,7 @@ class wtemplate {
                 let index = str.indexOf('public RegisterNotification');
                 if (index >= 0) {
                     str = str.slice(0, index) + this.formatNoticeListener(linkObj.script.trueName);
-                    str += '}';
+                    str += '\n}';
                 }
             }
         }
@@ -118,7 +126,7 @@ class wtemplate {
                 let index = str.indexOf('public RegisterNotification');
                 if (index >= 0) {
                     str = str.slice(0, index) + this.formatNoticeListener(mvc.layer.name);
-                    str += '}';
+                    str += '\n}';
                 }
             }
         }
