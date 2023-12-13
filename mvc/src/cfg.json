@@ -1,0 +1,39 @@
+{
+    "mvc": [{
+            "name": "mediator",
+            "classPath": "db://assets/scripts/game/mediator/BaseUIMediator.ts",
+            "outPath": "db://assets/scripts/game/mediator/",
+            "autoPath": true,
+            "link": "layer",
+            "type": "script"
+        },
+        {
+            "name": "layer",
+            "classPath": "db://assets/scripts/game/view/BaseUINode.ts",
+            "outPath": "db://assets/scripts/game/view/layersui/",
+            "autoPath": true,
+            "appendPath": "_layer",
+            "type": "script"
+        },
+        {
+            "name": "proxy",
+            "classPath": "db://assets/scripts/game/proxy/RemoteProxy.ts",
+            "outPath": "db://assets/scripts/game/proxy/remote/",
+            "link": "model",
+            "type": "script"
+        },
+        {
+            "name": "prefab",
+            "outPath": "db://assets/resources/prefab/game/",
+            "appendPath": "_layer",
+            "autoPath": true,
+            "type": "prefab"
+        }
+    ],
+    "NoticeTable": "assets/scripts/config/NoticeTable.ts",
+    "LayerTable": "assets/scripts/config/LayerTable.ts",
+    "ProxyTable": "assets/scripts/config/ProxyTable.ts",
+    "WorldProxyTable": "assets/scripts/game/register/WorldProxyTable.ts",
+    "WorldMediatorTable": "assets/scripts/game/register/WorldMediatorTable.ts",
+    "ProtocolPath": "assets/scripts/game/proxy/protocol"
+}

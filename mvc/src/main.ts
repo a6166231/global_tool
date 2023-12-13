@@ -1,15 +1,17 @@
 // @ts-ignore
 import packageJSON from '../package.json';
 import Path from 'path';
-import Fs from 'fs';
+import Fs, { readFileSync } from 'fs';
 import { MVCModelName } from './panels/default/MVCModel';
 import Utils from './panels/default/util';
 import { AssetInfo } from '../@types/packages/asset-db/@types/public';
+import path from 'path';
+import { readFile } from 'fs-extra';
 const { promisify } = require('util');
 
 export enum TemplateType {
-    script,
-    prefab,
+    script = 'script',
+    prefab = 'prefab',
 }
 
 export interface TemplateModel {
@@ -33,41 +35,37 @@ export interface ScriptDataModel {
     path: string,
 }
 
-let templateList: TemplateModel[] = [
-    {
-        name: MVCModelName.Mediator,
-        classPath: 'db://assets/scripts/game/mediator/BaseUIMediator.ts',
-        outPath: 'db://assets/scripts/game/mediator/',
-        autoPath: true,
-        link: MVCModelName.Layer,
-        type: TemplateType.script,
-    },
-    {
-        name: MVCModelName.Layer,
-        classPath: 'db://assets/scripts/game/view/BaseUINode.ts',
-        outPath: 'db://assets/scripts/game/view/layersui/',
-        autoPath: true,
-        appendPath: '_layer',
-        type: TemplateType.script,
-    },
-    {
-        name: MVCModelName.Proxy,
-        classPath: 'db://assets/scripts/game/proxy/RemoteProxy.ts',
-        outPath: 'db://assets/scripts/game/proxy/remote/',
-        link: MVCModelName.Model,
-        type: TemplateType.script,
-    },
-    {
-        name: MVCModelName.Prefab,
-        outPath: 'db://assets/resources/prefab/game/',
-        appendPath: '_layer',
-        autoPath: true,
-        type: TemplateType.prefab,
-    },
-];
+let cfgJson: {
+    mvc: Array<TemplateModel>,
+    NoticeTable: string,
+    LayerTable: string,
+    ProxyTable: string,
+    WorldProxyTable: string,
+    WorldMediatorTable: string,
+    ProtocolPath: string,
+};
 
-export function getTemplateList(): TemplateModel[] {
-    return templateList;
+async function getLocalCfgJson() {
+    if (!cfgJson) {
+        let json = await readFile(path.join(Editor.Package.getPath(packageJSON.name)!, 'src/cfg.json'))
+        if (json) {
+            cfgJson = JSON.parse(json.toString())
+        } else {
+            console.error("can't load cfg.json file!")
+        }
+    }
+    return cfgJson;
+}
+
+export function getCfgJson() {
+    return getLocalCfgJson()
+}
+
+export async function getTemplateList(): Promise<TemplateModel[]> {
+    if (!cfgJson) {
+        await getLocalCfgJson()
+    }
+    return cfgJson?.mvc || [];
 }
 
 /**
@@ -96,7 +94,7 @@ export function unload() {
 }
 
 export let collectAllExtendsClass = async function (mapScript: Map<string, ScriptDataModel | string>, layerScript: Map<string, string> = new Map): Promise<Map<string, string>> {
-    let layer = templateList.find(item => { return item.name == MVCModelName.Layer });
+    let layer = (await getTemplateList()).find(item => { return item.name == MVCModelName.Layer });
     if (!layer || !layer.classPath) return new Map;
     let name = Path.basename(layer.classPath).replace('.ts', "")
     let layerList = await Editor.Message.request("scene", "query-classes", { extends: name })

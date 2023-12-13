@@ -57,7 +57,8 @@ class LinkItem {
             this.onClick();
             this.onChangeCall();
         };
-        this._link.onclick = () => {
+        this._link.onclick = (ev) => {
+            ev.stopPropagation();
             this.initLinkList();
         };
         this._link.onchange = () => {

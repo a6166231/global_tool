@@ -1,4 +1,5 @@
 import Fs from 'fs';
+import { Component } from '../../../@types/packages/engine/@types/editor-extends';
 
 export default class Utils {
     /**

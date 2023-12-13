@@ -36,6 +36,8 @@ const MVCModel_1 = require("./MVCModel");
 const mvc_1 = require("./mvc");
 const linkItem_1 = require("./ui/linkItem");
 const pathLockItem_1 = require("./ui/pathLockItem");
+const CIBase_1 = require("./customInject/CIBase");
+const AST_1 = require("./ts-morph/AST");
 const BaseID = "id";
 let mapTemplateScript = new Map;
 let mapSelect2ScriptItem = new Map;
@@ -55,6 +57,7 @@ module.exports = Editor.Panel.define({
         app: '#MVC',
         funcList: '#funcList',
         scriptName: '#scriptName',
+        scriptComment: '#scriptComment',
         classesPanel: '#classesPanel',
         scriptItem: '#scriptItem',
         prefabItem: '#prefabItem',
@@ -100,7 +103,10 @@ module.exports = Editor.Panel.define({
                 let clsSelect = util_1.default.getClsNameElement(item, 'LinkItem');
                 if (clsSelect) {
                     clsSelect.hidden = false;
-                    _vLinkItem[iindex] = new linkItem_1.LinkItem(clsSelect, data, this.refreshScriptInfo.bind(this));
+                    _vLinkItem[iindex] = new linkItem_1.LinkItem(clsSelect, data, () => {
+                        _previewIndex = iindex;
+                        this.refreshScriptInfo();
+                    });
                 }
             }
             this.$.classesPanel.appendChild(item);
@@ -113,7 +119,7 @@ module.exports = Editor.Panel.define({
         async initFuncList() {
             if (!this.$.funcList)
                 return;
-            let templateList = (0, main_1.getTemplateList)();
+            let templateList = await (0, main_1.getTemplateList)();
             let index = 0;
             for (let template of templateList) {
                 let iindex = index;
@@ -146,8 +152,8 @@ module.exports = Editor.Panel.define({
             this.refreshScriptInfo();
         },
         /** 初始化模板脚本 */
-        initTempLateScripts() {
-            let templateList = (0, main_1.getTemplateList)();
+        async initTempLateScripts() {
+            let templateList = await (0, main_1.getTemplateList)();
             const assetTempPath = path_1.default.join(Editor.Project.path, '.creator/asset-template/typescript');
             for (let template of templateList) {
                 if (!template.classPath)
@@ -159,7 +165,7 @@ module.exports = Editor.Panel.define({
                 });
             }
         },
-        refreshScriptInfo(ev) {
+        refreshScriptInfo(bPreview = true) {
             let name = this.$.scriptName;
             if (!name)
                 return;
@@ -198,7 +204,7 @@ module.exports = Editor.Panel.define({
                     }
                 }
             }
-            this.previewTempResult();
+            bPreview && this.previewTempResult();
         },
         refreshMVCModelData() {
             var _a;
@@ -323,9 +329,11 @@ module.exports = Editor.Panel.define({
         },
         /** 异步创建所有的脚本 */
         async syncCreateScripts(vReadyScripts) {
+            var _a, _b;
             console.log('1.create scripts~~~~');
             let userInfo = await this.getUserInfo();
             let count = 0;
+            let readyExportModel = [];
             for (let obj of vReadyScripts) {
                 let lb = util_1.default.getClsNameElement(obj.item, 'layerName');
                 let path = util_1.default.getTagNameElement(obj.item, 'ui-file');
@@ -334,12 +342,29 @@ module.exports = Editor.Panel.define({
                 //@ts-ignore
                 console.log(path.value);
                 //@ts-ignore
-                await util_1.default.createFile(ppath + '/' + lb.value + '.ts', await this.formatScriptTemplate(ppath, lb.value, obj.data, userInfo)).catch((err) => {
+                const lbVal = lb.value;
+                let exportModel = await this.formatScriptTemplate(ppath, lbVal, obj.data, userInfo, false);
+                readyExportModel.push(exportModel);
+                await util_1.default.createFile(ppath + '/' + lbVal + '.ts', (exportModel.str)).catch((err) => {
                     console.warn(err);
                 });
                 count++;
             }
             console.log('1-1.create scripts end~~~~');
+            console.log('1-2.inject scripts~~~~');
+            //@ts-ignore
+            const scriptComment = ((_a = this.$.scriptComment) === null || _a === void 0 ? void 0 : _a.value) || '';
+            for (let model of readyExportModel) {
+                if ((_b = model.CIList) === null || _b === void 0 ? void 0 : _b.length) {
+                    for (let CIItem of model.CIList) {
+                        CIItem.comment = scriptComment;
+                        let _ts = await CIBase_1.CIBase.create(CIItem);
+                        await _ts.save();
+                    }
+                }
+            }
+            console.log('1-3.inject scripts end~~~~');
+            AST_1.AST.clear();
         },
         async previewTempResult(index) {
             this.refreshMVCModelData();
@@ -364,22 +389,23 @@ module.exports = Editor.Panel.define({
             //@ts-ignore
             let ppath = path.value.replace(projectHead, dbHead);
             //@ts-ignore
-            this.$.mainCode.innerHTML = await this.formatScriptTemplate(ppath, lb.value, obj.data, userInfo);
+            let model = await this.formatScriptTemplate(ppath, lb.value, obj.data, userInfo, true);
+            this.$.mainCode.innerHTML = model.str;
         },
         /** 格式化脚本模板 */
-        formatScriptTemplate(path, scriptName, model, userInfo) {
+        formatScriptTemplate(path, scriptName, model, userInfo, bPreview) {
             return wtemplate_1.wtemplate.format(mapTemplateScript.get(model.name), {
                 path: path,
                 scriptName: scriptName,
                 model: model,
                 userInfo: userInfo,
                 mvc: _mvcModel,
-            });
+            }, bPreview);
         },
         addListener() {
-            this.$.scriptName && (this.$.scriptName.onkeyup = this.refreshScriptInfo.bind(this));
+            this.$.scriptName && (this.$.scriptName.onkeyup = this.refreshScriptInfo.bind(this, true));
             this.$.btnCreate && (this.$.btnCreate.onclick = this.readyCreateAssets.bind(this));
-            mvc_1.mvc.messageMgr().setResChangeCall(this.refreshScriptInfo.bind(this));
+            mvc_1.mvc.messageMgr().setResChangeCall(this.refreshScriptInfo.bind(this, false));
         }
     },
     ready() {

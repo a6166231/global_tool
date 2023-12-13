@@ -4,11 +4,13 @@ import { ScriptDataModel, TemplateModel, TemplateType, collectAllExtendsClass, c
 import Utils from './util';
 module.paths.push(join(Editor.App.path, 'node_modules'));
 
-import { wtemplate } from './wtemplate';
+import { TemplateExportModel, wtemplate } from './wtemplate';
 import { AssetItem, MVCModel, MVCModelName } from './MVCModel';
 import { mvc } from './mvc';
 import { LinkItem } from './ui/linkItem';
 import { pathLockItem } from './ui/pathLockItem';
+import { CIBase } from './customInject/CIBase';
+import { AST } from './ts-morph/AST';
 
 /**
  * @zh 如果希望兼容 3.3 之前的版本可以使用下方的代码
@@ -48,6 +50,7 @@ module.exports = Editor.Panel.define({
         app: '#MVC',
         funcList: '#funcList',
         scriptName: '#scriptName',
+        scriptComment: '#scriptComment',
         classesPanel: '#classesPanel',
         scriptItem: '#scriptItem',
         prefabItem: '#prefabItem',
@@ -95,7 +98,10 @@ module.exports = Editor.Panel.define({
                 let clsSelect = Utils.getClsNameElement(item, 'LinkItem');
                 if (clsSelect) {
                     clsSelect.hidden = false
-                    _vLinkItem[iindex] = new LinkItem(clsSelect, data, this.refreshScriptInfo.bind(this))
+                    _vLinkItem[iindex] = new LinkItem(clsSelect, data, () => {
+                        _previewIndex = iindex
+                        this.refreshScriptInfo()
+                    })
                 }
             }
             this.$.classesPanel.appendChild(item)
@@ -107,7 +113,7 @@ module.exports = Editor.Panel.define({
         /** 根据模板生成功能列表 */
         async initFuncList() {
             if (!this.$.funcList) return;
-            let templateList = getTemplateList();
+            let templateList = await getTemplateList();
             let index = 0;
             for (let template of templateList) {
                 let iindex = index;
@@ -146,8 +152,8 @@ module.exports = Editor.Panel.define({
             this.refreshScriptInfo();
         },
         /** 初始化模板脚本 */
-        initTempLateScripts() {
-            let templateList = getTemplateList();
+        async initTempLateScripts() {
+            let templateList = await getTemplateList();
             const assetTempPath = Path.join(Editor.Project.path, '.creator/asset-template/typescript')
             for (let template of templateList) {
                 if (!template.classPath) continue;
@@ -159,7 +165,7 @@ module.exports = Editor.Panel.define({
                 })
             }
         },
-        refreshScriptInfo(ev?: any) {
+        refreshScriptInfo(bPreview: boolean = true) {
             let name = this.$.scriptName
             if (!name) return
             //@ts-ignore
@@ -200,7 +206,7 @@ module.exports = Editor.Panel.define({
                     }
                 }
             }
-            this.previewTempResult()
+            bPreview && this.previewTempResult()
         },
         refreshMVCModelData() {
             let mvcModel: MVCModel = {};
@@ -333,6 +339,9 @@ module.exports = Editor.Panel.define({
             let userInfo = await this.getUserInfo()
 
             let count = 0;
+
+            let readyExportModel: TemplateExportModel[] = []
+
             for (let obj of vReadyScripts) {
                 let lb = Utils.getClsNameElement(obj.item, 'layerName');
                 let path = Utils.getTagNameElement(obj.item, 'ui-file');
@@ -341,12 +350,33 @@ module.exports = Editor.Panel.define({
                 //@ts-ignore
                 console.log(path.value)
                 //@ts-ignore
-                await Utils.createFile(ppath + '/' + lb.value + '.ts', await this.formatScriptTemplate(ppath, lb.value, obj.data, userInfo)).catch((err) => {
+                const lbVal = lb.value
+                let exportModel = await this.formatScriptTemplate(ppath, lbVal, obj.data, userInfo, false)
+                readyExportModel.push(exportModel);
+
+                await Utils.createFile(ppath + '/' + lbVal + '.ts', (exportModel.str)).catch((err) => {
                     console.warn(err)
                 })
                 count++;
             }
             console.log('1-1.create scripts end~~~~')
+
+            console.log('1-2.inject scripts~~~~')
+
+            //@ts-ignore
+            const scriptComment = this.$.scriptComment?.value || ''
+            for (let model of readyExportModel) {
+                if (model.CIList?.length) {
+                    for (let CIItem of model.CIList) {
+                        CIItem.comment = scriptComment
+                        let _ts = await CIBase.create(CIItem)
+                        await _ts.save()
+                    }
+                }
+            }
+            console.log('1-3.inject scripts end~~~~')
+
+            AST.clear()
         },
         async previewTempResult(index?: number) {
             this.refreshMVCModelData();
@@ -372,22 +402,23 @@ module.exports = Editor.Panel.define({
             //@ts-ignore
             let ppath = path.value.replace(projectHead, dbHead)
             //@ts-ignore
-            this.$.mainCode.innerHTML = await this.formatScriptTemplate(ppath, lb.value, obj.data, userInfo)
+            let model = await this.formatScriptTemplate(ppath, lb.value, obj.data, userInfo, true)
+            this.$.mainCode.innerHTML = model.str
         },
         /** 格式化脚本模板 */
-        formatScriptTemplate(path: string, scriptName: string, model: TemplateModel, userInfo: Editor.User.UserData) {
+        formatScriptTemplate(path: string, scriptName: string, model: TemplateModel, userInfo: Editor.User.UserData, bPreview: boolean): Promise<TemplateExportModel> {
             return wtemplate.format(mapTemplateScript.get(model.name), {
                 path: path,
                 scriptName: scriptName,
                 model: model,
                 userInfo: userInfo,
                 mvc: _mvcModel,
-            })
+            }, bPreview)
         },
         addListener() {
-            this.$.scriptName && (this.$.scriptName.onkeyup = this.refreshScriptInfo.bind(this));
+            this.$.scriptName && (this.$.scriptName.onkeyup = this.refreshScriptInfo.bind(this, true));
             this.$.btnCreate && (this.$.btnCreate.onclick = this.readyCreateAssets.bind(this));
-            mvc.messageMgr().setResChangeCall(this.refreshScriptInfo.bind(this));
+            mvc.messageMgr().setResChangeCall(this.refreshScriptInfo.bind(this, false));
         }
     },
     ready() {

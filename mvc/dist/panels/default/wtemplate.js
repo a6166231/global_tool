@@ -5,9 +5,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.wtemplate = exports.TemplateScriptMap = exports.TemplateStr = void 0;
 const path_1 = __importDefault(require("path"));
+const main_1 = require("../../main");
 const MVCModel_1 = require("./MVCModel");
 const util_1 = __importDefault(require("./util"));
 const package_json_1 = __importDefault(require("../../../package.json"));
+const CINoticeTable_1 = require("./customInject/CINoticeTable");
+const CIBase_1 = require("./customInject/CIBase");
+const CILayerTable_1 = require("./customInject/CILayerTable");
+const CIWorldMediatorTable_1 = require("./customInject/CIWorldMediatorTable");
+const CIWorldProxyTable_1 = require("./customInject/CIWorldProxyTable");
+const CIProxyLink_1 = require("./customInject/CIProxyLink");
+const CIProxyTable_1 = require("./customInject/CIProxyTable");
 var TemplateStr;
 (function (TemplateStr) {
     TemplateStr["Author"] = "<%Author%>";
@@ -51,22 +59,29 @@ exports.TemplateScriptMap = {
     public on${TemplateStr.ProxyRes}(cmd: number, data: ${TemplateStr.ProxyRes}) {
         console.log('--------- ${TemplateStr.ProxyRes}', cmd, data);
     }`,
-    noticeStr: `
+    noticeOpenStr: `Layer_${TemplateStr.InterfaceClassName}_Open`,
+    noticeCloseStr: `Layer_${TemplateStr.InterfaceClassName}_Close`,
+    noticeFuncStr: `
     public RegisterNotification(callMap: Map<NoticeTable, DisposeHandle>): void {
         callMap.set(Global.NTable.Layer_${TemplateStr.InterfaceClassName}_Open, this.OpenLayer);
         callMap.set(Global.NTable.Layer_${TemplateStr.InterfaceClassName}_Close, this.CloseLayer);
     }`
 };
 class wtemplate {
-    static async format(str = "", param) {
+    static async format(str = "", param, bPreview) {
         if (!str || str.length == 0)
-            return str;
+            return { str };
         str = this.formatStrByTemplate(str, param.scriptName, TemplateStr.ClassName);
         str = this.formatStrByTemplate(str, (new Date()).toString(), TemplateStr.Time);
         str = this.formatStrByTemplate(str, param.path + '/' + param.scriptName + '.ts', TemplateStr.URL);
         str = this.formatStrByTemplate(str, param.userInfo.nickname, TemplateStr.Author);
-        str = await this.formatClassInterface(str, param);
-        return str;
+        let exportModel = await this.formatClassInterface(str, param, bPreview);
+        if (bPreview && exportModel) {
+            for (let CIItem of (exportModel.CIList || [])) {
+                await CIBase_1.CIBase.create(CIItem);
+            }
+        }
+        return exportModel;
     }
     static async formatPrefab(fname) {
         let prefab = await util_1.default.readFile(path_1.default.join(Editor.Package.getPath(package_json_1.default.name) || '', 'src/prefab/PrefabTemplate.prefab'));
@@ -76,38 +91,47 @@ class wtemplate {
     static formatStrByTemplate(str, tar, type) {
         return str.replace(new RegExp(type, 'g'), tar);
     }
-    static async formatClassInterface(str, param) {
+    /** 根据不同接口类型格式化导出数据结构 */
+    static async formatClassInterface(str, param, bPreview) {
         let model = param.model;
         if (!model.classPath)
-            return str;
+            return { str };
         let extendsCls = path_1.default.basename(model.classPath).replace('.ts', '');
+        let exportModel = { str, CIList: [] };
         switch (model.name) {
             case MVCModel_1.MVCModelName.Mediator:
-                str = this._formatMediator(str, param, param.mvc, extendsCls);
+                exportModel = await this._formatMediator(str, param, param.mvc, extendsCls, bPreview);
                 break;
             case MVCModel_1.MVCModelName.Proxy:
-                str = await this._formatProxy(str, param, param.mvc.proxy, extendsCls);
+                exportModel = await this._formatProxy(str, param, param.mvc.proxy, extendsCls, bPreview);
                 break;
             case MVCModel_1.MVCModelName.Layer:
+                exportModel = await this._formatLayer(str, param, bPreview);
                 break;
         }
-        return str;
+        return exportModel;
     }
-    static _formatMediator(str, param, mvc, extendsCls) {
-        var _a, _b, _c;
+    static async _formatMediator(str, param, mvc, extendsCls, bPreview) {
+        var _a, _b, _c, _d;
         let linkObj = ((_a = mvc.mediator) === null || _a === void 0 ? void 0 : _a.link) || {};
+        let linkLayerName = '';
+        let exportModel = {
+            str,
+            CIList: [],
+        };
         if (linkObj && linkObj.item && !linkObj.item.dropLinkHiddent) {
             if (linkObj.status && linkObj.script) {
+                linkLayerName = linkObj.script.trueName;
                 //mediator 绑定 目标layer
                 let extendsStr = `extends ${extendsCls}`;
-                str = str.replace(extendsStr, `${extendsStr}<${linkObj.script.trueName}>`);
+                str = str.replace(extendsStr, `${extendsStr}<${linkLayerName}>`);
                 let constructorStr = `super(${param.scriptName}.NAME)`;
                 str = str.replace(constructorStr, exports.TemplateScriptMap.mediatorConstructor2);
                 str = this.formatStrByTemplate(str, constructorStr, TemplateStr.Constructor);
-                str = this.formatStrByTemplate(str, linkObj.script.trueName, TemplateStr.InterfaceClassName);
+                str = this.formatStrByTemplate(str, linkLayerName, TemplateStr.InterfaceClassName);
                 let index = str.indexOf('public RegisterNotification');
                 if (index >= 0) {
-                    str = str.slice(0, index) + this.formatNoticeListener(linkObj.script.trueName);
+                    str = str.slice(0, index) + this.formatNoticeListener(linkLayerName);
                     str += '\n}';
                 }
             }
@@ -115,83 +139,117 @@ class wtemplate {
         else {
             //extends
             if (mvc.layer && ((_c = (_b = mvc.mediator) === null || _b === void 0 ? void 0 : _b.link) === null || _c === void 0 ? void 0 : _c.status)) {
+                linkLayerName = mvc.layer.name;
                 //mediator 绑定 layer
                 let extendsStr = `extends ${extendsCls}`;
-                str = str.replace(extendsStr, `${extendsStr}<${mvc.layer.name}>`);
+                str = str.replace(extendsStr, `${extendsStr}<${linkLayerName}>`);
                 let constructorStr = `super(${param.scriptName}.NAME)`;
                 str = str.replace(constructorStr, mvc.layer.constAppend ? exports.TemplateScriptMap.mediatorConstructor : exports.TemplateScriptMap.mediatorConstructor2);
                 str = this.formatStrByTemplate(str, constructorStr, TemplateStr.Constructor);
-                str = this.formatStrByTemplate(str, mvc.layer.name, TemplateStr.InterfaceClassName);
+                str = this.formatStrByTemplate(str, linkLayerName, TemplateStr.InterfaceClassName);
                 str = this.formatStrByTemplate(str, mvc.layer.appendPath || "", TemplateStr.AppendPath);
                 let index = str.indexOf('public RegisterNotification');
                 if (index >= 0) {
-                    str = str.slice(0, index) + this.formatNoticeListener(mvc.layer.name);
+                    str = str.slice(0, index) + this.formatNoticeListener(linkLayerName);
                     str += '\n}';
                 }
             }
         }
-        return str;
+        if (!bPreview) {
+            //此处不保存 且 要提前加载 所以直接create
+            await CIBase_1.CIBase.create({
+                CIWay: CIBase_1.CIBase,
+                fpath: (_d = linkObj === null || linkObj === void 0 ? void 0 : linkObj.script) === null || _d === void 0 ? void 0 : _d.path.replace(Editor.Project.path, ''),
+                buffer: str,
+                opath: path_1.default.join(Editor.Project.path, param.path, param.scriptName + '.ts').replace('db:', ''),
+            });
+            linkLayerName.length && exportModel.CIList.push({
+                CIWay: CINoticeTable_1.CINoticeTable,
+                fpath: (await (0, main_1.getCfgJson)()).NoticeTable,
+                readyList: [
+                    this.formatStrByTemplate(exports.TemplateScriptMap.noticeOpenStr, linkLayerName, TemplateStr.InterfaceClassName),
+                    this.formatStrByTemplate(exports.TemplateScriptMap.noticeCloseStr, linkLayerName, TemplateStr.InterfaceClassName),
+                ],
+                opath: (await (0, main_1.getCfgJson)()).NoticeTable,
+            });
+            exportModel.CIList.push({
+                CIWay: CIWorldMediatorTable_1.CIWorldMediatorTable,
+                fpath: (await (0, main_1.getCfgJson)()).WorldMediatorTable,
+                readyList: [
+                    param.scriptName,
+                ],
+                opath: (await (0, main_1.getCfgJson)()).WorldMediatorTable,
+                lpath: param.path,
+            });
+        }
+        exportModel.str = str;
+        return exportModel;
     }
-    static async _formatProxy(str, param, proxy, extendsCls) {
+    static async _formatProxy(str, param, proxy, extendsCls, bPreview) {
+        var _a;
         let constructorStr = `super(${param.scriptName}.NAME)`;
         //proxy 绑定 model
         let linkObj = proxy === null || proxy === void 0 ? void 0 : proxy.link;
+        let exportModel = {
+            str,
+            CIList: [],
+        };
         if (linkObj && linkObj.status && linkObj.script) {
             let extendsStr = `extends ${extendsCls}`;
             str = str.replace(extendsStr, `${extendsStr}<${linkObj.script.trueName}>`);
             str = str.replace(constructorStr, exports.TemplateScriptMap.proxyConstructor);
             str = this.formatStrByTemplate(str, constructorStr, TemplateStr.Constructor);
             str = this.formatStrByTemplate(str, linkObj.script.trueName, TemplateStr.InterfaceClassName);
-            let lastRightBrace = str.lastIndexOf('}');
-            str = str.slice(0, lastRightBrace) + await this.formatModelRequest(linkObj);
-            str += '}';
         }
-        return str;
+        //proxy这里要预览结果 所以要提前解析一次
+        let ci = await CIBase_1.CIBase.create({
+            CIWay: CIProxyLink_1.CIProxyLink,
+            fpath: (_a = linkObj === null || linkObj === void 0 ? void 0 : linkObj.script) === null || _a === void 0 ? void 0 : _a.path.replace(Editor.Project.path, ''),
+            buffer: str,
+            opath: path_1.default.join(Editor.Project.path, param.path, param.scriptName + '.ts').replace('db:', ''),
+        });
+        str = ci.getFullText();
+        if (!bPreview) {
+            exportModel.CIList.push({
+                CIWay: CIWorldProxyTable_1.CIWorldProxyTable,
+                fpath: (await (0, main_1.getCfgJson)()).WorldProxyTable,
+                readyList: [
+                    param.scriptName,
+                ],
+                opath: (await (0, main_1.getCfgJson)()).WorldProxyTable,
+                lpath: param.path,
+            });
+            exportModel.CIList.push({
+                CIWay: CIProxyTable_1.CIProxyTable,
+                fpath: (await (0, main_1.getCfgJson)()).ProxyTable,
+                readyList: [
+                    param.scriptName,
+                ],
+                opath: (await (0, main_1.getCfgJson)()).ProxyTable,
+            });
+        }
+        exportModel.str = str;
+        return exportModel;
+    }
+    static async _formatLayer(str, param, bPreview) {
+        var _a;
+        let exportModel = {
+            str,
+            CIList: [],
+        };
+        if (!bPreview && ((_a = param.mvc.layer) === null || _a === void 0 ? void 0 : _a.name)) {
+            exportModel.CIList.push({
+                CIWay: CILayerTable_1.CILayerTable,
+                fpath: (await (0, main_1.getCfgJson)()).LayerTable,
+                readyList: [
+                    param.scriptName
+                ],
+            });
+        }
+        return exportModel;
     }
     static formatNoticeListener(name) {
-        return this.formatStrByTemplate(exports.TemplateScriptMap.noticeStr, name, TemplateStr.InterfaceClassName);
-    }
-    /** 格式化model的request方法 */
-    static async formatModelRequest(linkItem) {
-        if (!linkItem)
-            return '';
-        let script = await util_1.default.readFile(linkItem.script.path);
-        if (!script)
-            return '';
-        let cmd = `enum ${linkItem.script.trueName}CMD`;
-        let index = script.indexOf(cmd);
-        if (index < 0)
-            return '';
-        let enumEndIndex = script.indexOf('}', index);
-        if (enumEndIndex < 0)
-            return '';
-        let sEnum = script.slice(index + cmd.length, enumEndIndex + 1);
-        let str = '';
-        sEnum = sEnum.replace(new RegExp('=', 'g'), ':');
-        let messageMap = {};
-        eval(`messageMap=${sEnum}`);
-        let reqS = '';
-        let resS = '';
-        for (let k in messageMap) {
-            //res 返回
-            if (k[2] == 's') {
-                resS += this.formatStrByTemplate(exports.TemplateScriptMap.proxyResponse, `${k}`, TemplateStr.ProxyRes) + '\n';
-            }
-            else { //res请求 
-                let req = this.formatStrByTemplate(exports.TemplateScriptMap.proxyRequest, `${k}`, TemplateStr.ProxyReq);
-                req = this.formatStrByTemplate(req, `${messageMap[k] % 1000}`, TemplateStr.IndexStr) + '\n';
-                reqS += req;
-            }
-        }
-        if (reqS.length > 0) {
-            str += '\n\t/** ----------------------request------------------------ */';
-            str += reqS;
-        }
-        if (resS.length > 0) {
-            str += '\n\t/** ----------------------response---------------------- */';
-            str += resS;
-        }
-        return str;
+        return this.formatStrByTemplate(exports.TemplateScriptMap.noticeFuncStr, name, TemplateStr.InterfaceClassName);
     }
     /** 格式化驼峰命名 根据大写分割并转小写用 split填充间隔
      * @example TestClassName        NBClass
