@@ -33,6 +33,7 @@
     "NoticeTable": "assets/scripts/config/NoticeTable.ts",
     "LayerTable": "assets/scripts/config/LayerTable.ts",
     "ProxyTable": "assets/scripts/config/ProxyTable.ts",
+    "JumpLayerProxy": "assets/scripts/game/proxy/remote/JumpLayerProxy.ts",
     "WorldProxyTable": "assets/scripts/game/register/WorldProxyTable.ts",
     "WorldMediatorTable": "assets/scripts/game/register/WorldMediatorTable.ts",
     "ProtocolPath": "assets/scripts/game/proxy/protocol"

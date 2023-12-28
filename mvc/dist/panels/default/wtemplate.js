@@ -16,6 +16,7 @@ const CIWorldMediatorTable_1 = require("./customInject/CIWorldMediatorTable");
 const CIWorldProxyTable_1 = require("./customInject/CIWorldProxyTable");
 const CIProxyLink_1 = require("./customInject/CIProxyLink");
 const CIProxyTable_1 = require("./customInject/CIProxyTable");
+const CIJumpLayerProxy_1 = require("./customInject/CIJumpLayerProxy");
 var TemplateStr;
 (function (TemplateStr) {
     TemplateStr["Author"] = "<%Author%>";
@@ -76,11 +77,11 @@ class wtemplate {
         str = this.formatStrByTemplate(str, param.path + '/' + param.scriptName + '.ts', TemplateStr.URL);
         str = this.formatStrByTemplate(str, param.userInfo.nickname, TemplateStr.Author);
         let exportModel = await this.formatClassInterface(str, param, bPreview);
-        if (bPreview && exportModel) {
-            for (let CIItem of (exportModel.CIList || [])) {
-                await CIBase_1.CIBase.create(CIItem);
-            }
-        }
+        // if (bPreview && exportModel) {
+        //     for (let CIItem of (exportModel.CIList || [])) {
+        //         await CIBase.create(CIItem)
+        //     }
+        // }
         return exportModel;
     }
     static async formatPrefab(fname) {
@@ -163,15 +164,32 @@ class wtemplate {
                 buffer: str,
                 opath: path_1.default.join(Editor.Project.path, param.path, param.scriptName + '.ts').replace('db:', ''),
             });
-            linkLayerName.length && exportModel.CIList.push({
-                CIWay: CINoticeTable_1.CINoticeTable,
-                fpath: (await (0, main_1.getCfgJson)()).NoticeTable,
-                readyList: [
-                    this.formatStrByTemplate(exports.TemplateScriptMap.noticeOpenStr, linkLayerName, TemplateStr.InterfaceClassName),
-                    this.formatStrByTemplate(exports.TemplateScriptMap.noticeCloseStr, linkLayerName, TemplateStr.InterfaceClassName),
-                ],
-                opath: (await (0, main_1.getCfgJson)()).NoticeTable,
-            });
+            if (linkLayerName.length) {
+                //noticeTable中插入消息
+                exportModel.CIList.push({
+                    CIWay: CINoticeTable_1.CINoticeTable,
+                    fpath: (await (0, main_1.getCfgJson)()).NoticeTable,
+                    readyList: [
+                        this.formatStrByTemplate(exports.TemplateScriptMap.noticeOpenStr, linkLayerName, TemplateStr.InterfaceClassName),
+                        this.formatStrByTemplate(exports.TemplateScriptMap.noticeCloseStr, linkLayerName, TemplateStr.InterfaceClassName),
+                    ],
+                    opath: (await (0, main_1.getCfgJson)()).NoticeTable,
+                });
+                //jumplayerproxy插入
+                exportModel.CIList.push({
+                    CIWay: (CIJumpLayerProxy_1.CIJumpLayerProxy),
+                    fpath: (await (0, main_1.getCfgJson)()).JumpLayerProxy,
+                    readyList: [
+                        {
+                            open: this.formatStrByTemplate(exports.TemplateScriptMap.noticeOpenStr, linkLayerName, TemplateStr.InterfaceClassName),
+                            close: this.formatStrByTemplate(exports.TemplateScriptMap.noticeCloseStr, linkLayerName, TemplateStr.InterfaceClassName),
+                            layer: linkLayerName
+                        }
+                    ],
+                    opath: (await (0, main_1.getCfgJson)()).JumpLayerProxy,
+                });
+            }
+            //worldMeditorTable中插入引用
             exportModel.CIList.push({
                 CIWay: CIWorldMediatorTable_1.CIWorldMediatorTable,
                 fpath: (await (0, main_1.getCfgJson)()).WorldMediatorTable,

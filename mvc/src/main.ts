@@ -40,6 +40,7 @@ let cfgJson: {
     NoticeTable: string,
     LayerTable: string,
     ProxyTable: string,
+    JumpLayerProxy: string,
     WorldProxyTable: string,
     WorldMediatorTable: string,
     ProtocolPath: string,

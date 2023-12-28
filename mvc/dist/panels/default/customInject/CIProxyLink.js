@@ -155,10 +155,10 @@ class CIProxyLink extends CIBase_1.CIBase {
             ];
             let resultFunc = tarClass.addMethod({
                 docs: docs,
-                name: _enum.getName().slice(3),
+                name: 'on' + _enum.getName(),
                 parameters: parameters,
             });
-            resultFunc.setBodyText(`console.log("------------ ${funcName}", cmd, data)`);
+            resultFunc.setBodyText(`console.log("------------ ${'on' + _enum.getName()}", cmd, data)`);
         }
         return vResponseImport;
     }

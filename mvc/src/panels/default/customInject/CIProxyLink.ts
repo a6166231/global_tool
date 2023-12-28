@@ -8,7 +8,7 @@ export class CIProxyLink extends CIBase {
 
     async readyToInject() {
         //该proxy解析
-        this.proxyFile = await AST.formatSourceByStr(join(Editor.Project.path, this._CIItemData.opath!.replace('db:', '') + '.ts') , this._CIItemData.buffer!)!;
+        this.proxyFile = await AST.formatSourceByStr(join(Editor.Project.path, this._CIItemData.opath!.replace('db:', '') + '.ts'), this._CIItemData.buffer!)!;
         if (this._CIItemData.fpath) {
             let extName = extname(this._CIItemData.fpath!)
             let fileName = basename(this._CIItemData.fpath!).replace(extName, '')
@@ -131,10 +131,10 @@ export class CIProxyLink extends CIBase {
 
             let resultFunc = tarClass.addMethod({
                 docs: docs,
-                name: _enum.getName().slice(3),
+                name: 'on' + _enum.getName(),
                 parameters: parameters,
             })
-            resultFunc.setBodyText(`console.log("------------ ${funcName}", cmd, data)`)
+            resultFunc.setBodyText(`console.log("------------ ${'on' + _enum.getName()}", cmd, data)`)
         }
         return vResponseImport;
     }
