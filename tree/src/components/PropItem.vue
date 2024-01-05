@@ -8,10 +8,12 @@
       v-else-if="getPropType() == 'boolean'" />
     <el-color-picker v-model="CustomModel.color" size="small" style="flex: 1" color-format="hex" show-alpha
       v-else-if="getPropType() == 'cc.Color'" />
+    <el-input v-model="CustomModel.spriteFrame" readonly="true" style="flex: 1" v-else-if="getPropType() == 'cc.SpriteFrame'" />
   </div>
 </template>
 
 <script setup lang="ts">
+
 const props = defineProps<{
   model: any;
   propName: string;
@@ -38,6 +40,10 @@ class CustomModel {
   static set color(v: string) {
     // @ts-ignore
     props.model[props.propKey] = new cc.Color().fromHEX(v);
+  }
+
+  static get spriteFrame() {
+    return props.model[props.propKey].name
   }
 }
 </script>

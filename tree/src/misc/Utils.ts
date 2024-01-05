@@ -2,8 +2,6 @@
 import { rayCaughtControll } from "./rayCaughtControll";
 
 export default class Utils {
-    public static _rayCaught: rayCaughtControll;
-
     static checkNodeValid(ccNode: any) {
         // @ts-ignore
         return ccNode && cc.isValid(ccNode)
@@ -109,14 +107,8 @@ export default class Utils {
         }
     }
 
-    static createRayCaught(bInit: boolean = false) {
-        if (bInit) {
-            if (!this._rayCaught) {
-                this._rayCaught = new rayCaughtControll();
-            }
-        } else {
-            this._rayCaught.status = !this._rayCaught.status;
-        }
+    static createRayCaught() {
+        rayCaughtControll.Ins().status = !rayCaughtControll.Ins().status
     }
 
     static directorPause() {

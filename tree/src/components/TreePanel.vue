@@ -7,7 +7,7 @@
         src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABcAAAAWCAYAAAArdgcFAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAb9JREFUeNpi/P//P8OQAyBHM9HSAmyG+wDxOihNDCBafQ0Qv0bCsQTUdyOpBVmgixwsyEAIpjDIiev9/nlqv5Slmd/gsQBucEog/weQeiC7H5fhYJeDDLy7Xe/fs/0G/08u1/yNwwIUg0FqQfjaJp3V+CK05e7Tv/OXbnn5FcSRlWBnWdajxg+0oB/JApDBCSAG0GDWpjxFfhD7+89/bwR4WcqJiaTupmzxzzAXIfkAq4vv7tB7DaSV0JMiORYQNBhmOCMRPshICZHkAXEev/j5Z/WOV9+LEmR5YUHByc5kLuV44R45hoNAP9CCFJgFMIDPYGJzKCiMY+qmvvxx+OyHH8gS7TMfsgIN9iI1hzKgpwqgyzlsjQU4kCUL4mV4bA3ZmoDMHFINRzEYFiTvPv5+2bfg8WdwjuNnZZ5er8pHyAKcOQ85tdzconsfSAuC5JFTy5UN2n+AFrxDtwBrDiVgMNwBOCwgXLYQMBinBcHO3PNwpRaQzROBGYUx2kecGyTw+evfB7zczEbAVPEei+Glc9Z/nF036f5HWBw05yvyEiyfE/z49l3frHMeh4sx1BfFCR8BqScl+w/uag4gwABkfT32dt4TeQAAAABJRU5ErkJggg==">
     </div>
     <div style="margin-right: 0;width: 35px;height: 100%; transform: rotate(-45deg)"
-      @click="treeMap.length && Utils.createRayCaught()">
+      @click="treeMap.length && props.show && Utils.createRayCaught()">
       <img style="width: 35px; height: 35px;"
         src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABUAAAAYCAYAAAAVibZIAAAC+0lEQVQ4jZVVz2sTQRT+Zmc3u9nmVw0US0trragnfxQREbxYpBcvFsGKhx68mIqggopXQT2L2IKKFi14EOtRL/0DBClqQSp4VEqVNmnSJpvszjyZTfOrm5j2wezwvvfet9/MvNllvU4X2lm2Z+UcgBSAqdjv5Pt2+do2CFNatzZrv4mdYbu1WeW3JSUitBrZnpVxlmST4ddR8FM67JkoWJxNKvx/dRok0GzkelfPswibDr+IQtvP0ZWP+HP4VRQszKZzvaujrWqbKs31rY7AwFvrWQTaEY7BTBK9a3F/Vr71vAMw8C7Xt3p6W0rX+9PHwfHRehIBP6Fj78oudOYshBzNn5XPTxqwHnUAHHPr/emjQaWSUBnrA+l9YPhkPrTBh3X0/00gsWaBOYAoSX9WvsL5iAHzng0wzK8PpPfU81SXvzGY6QRwM3TXAh810LccRyJtgjkEURLVoXyFqzi/YMC4ZakDv70xmIlXuHQSVOmE+/oVM8XHQ+hZiiGeMcEEIPw1NRoDEHdN9Igofl0mUIZS3tMikaCrKlEnApyD2cf8YiilXzdhFDnIlXDIhelxaJIFSKVGKGoC0iV/D/UbJihLE4UDWWktxq6xWJJf0s4aM8YDS2181RIZE11LNsIFPUBaCHv4051HJlGsgQJw7xQgP3hjquIb/RAojW3UEmyG9EtCZFmH4QSV5jtKSMccuOMFIE+1gOs/v+vGV3vBPZw/BCBUDUbYZ5ISJeZBFnmAVOEqTouqB+lYfUjx6SQAfd5eqKDeUD6uZoULT0A4IkCqcKrBP/V5e63i+Hyqr5qZwoVH8IrB01d4fd1Wjhak5SLpSohiUKnCy3W0E1Jsk3RHSjdJPelfzwCp14YULUgVri6BbKJU4Q11QaWNBX5Xknq7UkQtlJIfZ1RR2hgPLL/S6v7yhYRwgyuRonyQ9bmNpOryN7Hyl4sgKXijCoPqa1S3HVs49M2uCBoBXgzIDbVIqIe3pDD7ixHI14fl5OYvuZ1NeXPaREMSgH95IhIq6Ht+IQAAAABJRU5ErkJggg==">
     </div>
@@ -217,8 +217,6 @@ function setChildren(container: TreeNode[], children: any[], path: string[]) {
 function refreshTree() {
   // @ts-ignore
   if (props.show && window.ccdevShow) {
-    Utils.createRayCaught(true)
-
     treeMap = [];
     //@ts-ignore
     setChildren(treeMap, cc.director.getScene().children, []);

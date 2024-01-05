@@ -2,12 +2,17 @@
 import Utils from "./Utils";
 
 export class rayCaughtControll {
-
     private _canvas;
-
     private _touchPos;
-
     private _status: boolean = false;
+
+    private static _int: rayCaughtControll;
+    public static Ins() {
+        if (!this._int) {
+            this._int = new rayCaughtControll()
+        }
+        return this._int
+    }
 
     set status(status: boolean) {
         this._status = status;
@@ -34,6 +39,7 @@ export class rayCaughtControll {
     }
 
     readyToRayCaught() {
+        if (this._canvas) return
         this._initTopCaught();
         this._initListener();
     }
@@ -41,7 +47,7 @@ export class rayCaughtControll {
     private _initTopCaught() {
         if (this._canvas) return
         let Caught = new cc.Node('Caught')
-        Caught.addComponent(cc.UITransformComponent)
+        Caught.addComponent(cc.UITransformComponent).priority = 999999
         this._canvas = Caught
         cc.director.getScene().addChild(Caught);
         Caught.addComponent(cc.Canvas)

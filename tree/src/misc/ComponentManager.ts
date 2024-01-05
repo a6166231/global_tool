@@ -16,24 +16,27 @@ export class ComponentManager {
             case 'cc.Label':
                 return new CCLabelModel();
             case 'cc.Sprite':
-                return new CCSpriteModel();
+                return new CCSpriteModel(componentGetter);
+            case 'cc.UIOpacity':
+                return new CCUIOpacityModel();
+            default:
+                return null
+        }
+    }
+
+    static getCustomViewModel(name: string, componentGetter: any) {
+        switch (name) {
+            case 'FontStyleLabel':
+                return new CSFontStyleLabel()
             default:
                 return null
         }
     }
 }
 
-class CCUITransformModel implements IComponentViewModel {
-
-    private componentGetter: any;
-
-    props: IComponentProp[] = [
-        { name: 'Width', key: 'width', custom: true },
-        { name: 'Height', key: 'height', custom: true },
-        { name: 'Anchor X', key: 'anchorX', custom: true },
-        { name: 'Anchor Y', key: 'anchorY', custom: true },
-    ]
-
+class ComponentGetterViewModel implements IComponentViewModel {
+    props: IComponentProp[] = []
+    protected componentGetter: any;
     constructor(componentGetter: any) {
         this.componentGetter = componentGetter;
     }
@@ -41,6 +44,16 @@ class CCUITransformModel implements IComponentViewModel {
     get component(): any {
         return this.componentGetter();
     }
+}
+
+class CCUITransformModel extends ComponentGetterViewModel {
+
+    props: IComponentProp[] = [
+        { name: 'Width', key: 'width', custom: true },
+        { name: 'Height', key: 'height', custom: true },
+        { name: 'Anchor X', key: 'anchorX', custom: true },
+        { name: 'Anchor Y', key: 'anchorY', custom: true },
+    ]
 
     get width() {
         return this.componentGetter().contentSize.width;
@@ -81,20 +94,32 @@ class CCUITransformModel implements IComponentViewModel {
 }
 
 class CCLabelModel implements IComponentViewModel {
-
     props: IComponentProp[] = [
         { name: 'String', key: 'string' },
         { name: 'Color', key: 'color' },
         { name: 'Font Size', key: 'fontSize' },
         { name: 'Line Height', key: 'lineHeight' },
     ];
-
 }
 
-class CCSpriteModel implements IComponentViewModel {
-
+class CCSpriteModel extends ComponentGetterViewModel {
     props: IComponentProp[] = [
         { name: 'Color', key: 'color' },
+        { name: 'SpriteFrame', key: 'spriteFrame' , custom: true},
     ];
 
+    get spriteFrame() {
+        return this.component._spriteFrame
+    }
+}
+class CCUIOpacityModel implements IComponentViewModel {
+    props: IComponentProp[] = [
+        { name: 'Opacity', key: 'opacity' },
+    ];
+}
+
+class CSFontStyleLabel implements IComponentViewModel {
+    props: IComponentProp[] = [
+        { name: 'Key', key: '_key' },
+    ];
 }
