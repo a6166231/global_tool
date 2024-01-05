@@ -8,6 +8,12 @@ if (!fse.existsSync(projectTemplatePath)) {
     console.error('project path not exist');
     return;
 }
+
+//复制前把旧的干掉
+const distPath = path.join(projectTemplatePath, 'preview-template/dist')
+if (fse.existsSync(distPath)) {
+    fse.removeSync(distPath)
+}
 fse.copy(localTemplatePath, projectTemplatePath).then(() => {
     console.log('更新预览模板成功');
 }).catch(err => {

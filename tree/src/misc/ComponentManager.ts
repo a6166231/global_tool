@@ -14,7 +14,7 @@ export class ComponentManager {
             case 'cc.UITransform':
                 return new CCUITransformModel(componentGetter);
             case 'cc.Label':
-                return new CCLabelModel();
+                return new CCLabelModel(componentGetter);
             case 'cc.Sprite':
                 return new CCSpriteModel(componentGetter);
             case 'cc.UIOpacity':
@@ -93,12 +93,13 @@ class CCUITransformModel extends ComponentGetterViewModel {
 
 }
 
-class CCLabelModel implements IComponentViewModel {
+class CCLabelModel extends ComponentGetterViewModel {
     props: IComponentProp[] = [
         { name: 'String', key: 'string' },
         { name: 'Color', key: 'color' },
         { name: 'Font Size', key: 'fontSize' },
         { name: 'Line Height', key: 'lineHeight' },
+        { name: 'Font', key: 'font'},
     ];
 }
 
