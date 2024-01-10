@@ -7,6 +7,19 @@ export default class Utils {
         return ccNode && cc.isValid(ccNode)
     }
 
+    static checkNumVal(val: number) {
+        return !isNaN(val)
+    }
+
+    static checkPropShow(show) {
+        switch (typeof show) {
+            case 'undefined': return true
+            case 'function': return show()
+            case 'boolean': return show
+        }
+        return true
+    }
+
     static outputToConsole(target: any) {
         let i = 1;
         // @ts-ignore
@@ -122,10 +135,10 @@ export default class Utils {
     }
 
     static getNodePath(node) {
-        if(!node) return ''
+        if (!node) return ''
         let temp = node;
         let paths = [temp.name]
-        while(temp.parent){
+        while (temp.parent) {
             paths.push(temp.parent.name)
             temp = temp.parent
         }

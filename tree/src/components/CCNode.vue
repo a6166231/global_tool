@@ -1,7 +1,7 @@
 <template>
     <div class="row">
         <el-input v-model="inputName" placeholder="info表里特效的id" width="50px"></el-input>
-        <el-button @click="Utils.addAnimation(inputName,ccNode)">创建</el-button>
+        <el-button @click="Utils.addAnimation(Number(inputName), ccNode as any)">创建</el-button>
     </div>
     <div class="row">
         <el-checkbox v-model="ccNode!.active" size="small" style="margin-right: 10px;" />
@@ -11,7 +11,7 @@
     </div>
     <template v-if="ccNode!.name != 'PROFILER_NODE'">
         <PropItem v-for="prop in NodeModel.props" :key="prop.key" :model="NodeModel" :prop-name="prop.name"
-            :prop-key="prop.key" :update-key="updateKey!"></PropItem>
+            :prop-key="prop.key" :prop-data="prop" :update-key="updateKey!"></PropItem>
     </template>
     <ProfilerPanel v-if="ccNode!.name == 'PROFILER_NODE'" :show="true"></ProfilerPanel>
 </template>
@@ -19,6 +19,7 @@
 <script setup lang="ts">
 import PropItem from './PropItem.vue';
 import Utils from '../misc/Utils';
+import { IComponentProp } from '../misc/ComponentManager';
 
 let inputName = "";  //输入框文本
 const props = defineProps({
@@ -28,7 +29,7 @@ const props = defineProps({
 
 class NodeModel {
 
-    static props = [
+    static props: IComponentProp[] = [
         { name: 'Name', key: 'nodeName' },
         { name: 'X', key: 'x' },
         { name: 'Y', key: 'y' },
@@ -37,6 +38,17 @@ class NodeModel {
         { name: 'Scale Y', key: 'scaleY' },
         { name: 'Scale Z', key: 'scaleZ' },
     ]
+
+    protected static _propObj: Record<string, any>;
+    static get propObj() {
+        if (!this._propObj) {
+            this._propObj = [] as any
+            for (let k of this.props) {
+                this._propObj[k.name] = k
+            }
+        }
+        return this._propObj;
+    }
 
     static get ccNode(): any {
         return props.ccNode;
