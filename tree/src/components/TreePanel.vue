@@ -179,12 +179,22 @@ function handleCurrentNodeChange(data: any) {
 function handleNodeExpandDeep(node: any) {
   let temp = node;
   expandedNodeMap.clear()
+  let count = 0
   while (temp) {
+    if (temp.parent)
+      count += temp.parent.children.indexOf(temp) + 1
     expandedNodeMap.set(temp.uuid, true)
     temp = temp.parent
   }
+
   treeView.value.setExpandedKeys([...expandedNodeMap.keys()])
   treeView.value.setCurrentKey(node.uuid)
+
+  //这里得加个延迟跳转 否则滚动坐标会因为tree的展开和收缩出现问题
+  //鼠标的滚动也会导致这里的element的滚动出现问题 所以写成这样子
+  setTimeout(() => {
+    getElement().scrollTop = (count + 1) * getElItemHeight() - getElement().offsetHeight / 2
+  }, 100);
 }
 
 // function handleNodeExpand(data: any) {
@@ -242,6 +252,17 @@ const intervalId = setInterval(() => {
     clearInterval(intervalId);
   }
 }, 1000);
+
+
+let _treeElement;
+let getElItemHeight = function () {
+  return getElement().getElementsByClassName('el-tree-node')[0]?.offsetHeight || 26
+}
+let getElement = function () {
+  if (_treeElement) return _treeElement
+  _treeElement = document.querySelector('.el-tree-virtual-list')
+  return _treeElement
+}
 
 
 </script>

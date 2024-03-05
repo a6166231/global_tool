@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { nodeWidgetControll } from "./nodeWidgetControll";
 import { rayCaughtControll } from "./rayCaughtControll";
 
 export default class Utils {
@@ -122,6 +123,10 @@ export default class Utils {
 
     static createRayCaught() {
         rayCaughtControll.Ins().status = !rayCaughtControll.Ins().status
+    }
+
+    static caughtNode(node?) {
+        nodeWidgetControll.Ins().node = node
     }
 
     static directorPause() {

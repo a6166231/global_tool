@@ -48,6 +48,7 @@ export class rayCaughtControll {
         if (this._canvas) return
         let Caught = new cc.Node('Caught')
         Caught.addComponent(cc.UITransformComponent).priority = 999999
+        Caught.getComponent(cc.UITransformComponent).setContentSize(cc.view.getVisibleSize())
         this._canvas = Caught
         cc.director.getScene().addChild(Caught);
         Caught.addComponent(cc.Canvas)
@@ -107,13 +108,10 @@ export class rayCaughtControll {
             graphics.rect(-bgTransform.width / 2, -bgTransform.height / 2, bgTransform.width, bgTransform.height);
             graphics.fillColor = new cc.Color().fromHEX('#E91E6390');
             graphics.fill();
-
-            nodeRect.on(cc.Node.EventType.TOUCH_END, this.clickNodeRect.bind(this, touch), this)
+            nodeRect.on(cc.Node.EventType.TOUCH_START, () => {
+                window.__updateSelectCurrentNode && window.__updateSelectCurrentNode(touch)
+            })
         }
-    }
-
-    clickNodeRect(node) {
-        window.__updateSelectCurrentNode && window.__updateSelectCurrentNode(node)
     }
 
     foreachChild(node: any) {

@@ -6,6 +6,7 @@
     <div class="row">
         <el-checkbox v-model="ccNode!.active" size="small" style="margin-right: 10px;" />
         <span class="header-title" style="flex: 1;">Node</span>
+        <el-button size="small" @click="Utils.caughtNode(ccNode)">caught</el-button>
         <el-button size="small" @click="Utils.drawNodeRect(ccNode)">draw</el-button>
         <el-button size="small" @click="Utils.outputToConsole(ccNode)">output</el-button>
     </div>

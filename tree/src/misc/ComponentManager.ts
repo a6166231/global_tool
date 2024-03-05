@@ -24,6 +24,8 @@ export class ComponentManager {
                 return new CCUIOpacityModel();
             case 'cc.ProgressBar':
                 return new CCProgressBarModel();
+            case 'cc.Camera':
+                return new CCCameraModel();
             case 'cc.Layout':
                 return new CCLayoutModel(componentGetter);
             default:
@@ -139,7 +141,7 @@ class CCLayoutModel extends ComponentGetterViewModel {
         { name: 'PaddingTop', key: 'paddingTop', show: () => Boolean(this.component.type == cc.Layout.Type.VERTICAL || this.component.type == cc.Layout.Type.GRID) },
         { name: 'PaddingBottom', key: 'paddingBottom', show: () => Boolean(this.component.type == cc.Layout.Type.VERTICAL || this.component.type == cc.Layout.Type.GRID) },
         { name: 'SpacingX', key: 'spacingX', show: () => Boolean(this.component.type == cc.Layout.Type.HORIZONTAL || this.component.type == cc.Layout.Type.GRID) },
-        { name: 'SpacingY', key: 'spacingY', show: () => Boolean(this.component.type == cc.Layout.Type.HORIZONTAL || this.component.type == cc.Layout.Type.GRID) },
+        { name: 'SpacingY', key: 'spacingY', show: () => Boolean(this.component.type == cc.Layout.Type.VERTICAL || this.component.type == cc.Layout.Type.GRID) },
     ];
 }
 
@@ -156,6 +158,11 @@ class CCSpriteModel extends ComponentGetterViewModel {
 class CCUIOpacityModel extends ComponentViewModelBase {
     props: IComponentProp[] = [
         { name: 'Opacity', key: 'opacity' },
+    ];
+}
+class CCCameraModel extends ComponentViewModelBase {
+    props: IComponentProp[] = [
+        { name: 'OrthoHeight', key: 'orthoHeight' },
     ];
 }
 class CCProgressBarModel extends ComponentViewModelBase {
