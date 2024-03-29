@@ -60,10 +60,10 @@
 
 **插件保存到任意路径下 ，创建  _目录链接_  到cocos全局插件路径下，同样可以加载插件**
 
-_ccc 3.8.x之后引擎的加载流程改动，不再支持软链_
+_ccc 3.8.x之后引擎的加载流程改动，不再支持软链链接单个插件，所以直接把extensions路径作为软链链接_
 
 windows
->mklink /J ~/User/.CocosCreator/packages/wwwtool ~/wwwtool  
+>mklink /D ~/User/.CocosCreator/packages/wwwtool ~/wwwtool  
 
 mac
 >ln -s ~/wwwtool ~/User/.CocosCreator/packages/wwwtool  
