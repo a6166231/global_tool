@@ -42,6 +42,12 @@ var updateTsConfig = async function (status: boolean) {
     })
 }
 
+function removeTrailingCommas(jsonStr:string) {
+    // 正则表达式匹配在对象或数组的最后一个元素后面的逗号
+    const regex = /(?<=(?:\{|\[)(?:[^{}\[\]]|"[^"]*"?|'[^']*'?)*)(,)(?=\s*[}\]])/g;
+    return jsonStr.replace(regex, '');
+}
+
 var spliceNote = function (str: string) {
     let split = str.split('\n')
     for (let i = 0; i < split.length; i++) {
@@ -50,7 +56,7 @@ var spliceNote = function (str: string) {
             i--;
         }
     }
-    return split.join('\n');
+    return removeTrailingCommas(split.join('\n'));
 }
 
 var writeTsConfig = async function (data: string) {

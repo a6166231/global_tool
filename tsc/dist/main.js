@@ -46,6 +46,11 @@ var updateTsConfig = async function (status) {
         }
     });
 };
+function removeTrailingCommas(jsonStr) {
+    // 正则表达式匹配在对象或数组的最后一个元素后面的逗号
+    const regex = /(?<=(?:\{|\[)(?:[^{}\[\]]|"[^"]*"?|'[^']*'?)*)(,)(?=\s*[}\]])/g;
+    return jsonStr.replace(regex, '');
+}
 var spliceNote = function (str) {
     let split = str.split('\n');
     for (let i = 0; i < split.length; i++) {
@@ -54,7 +59,7 @@ var spliceNote = function (str) {
             i--;
         }
     }
-    return split.join('\n');
+    return removeTrailingCommas(split.join('\n'));
 };
 var writeTsConfig = async function (data) {
     return await fs_1.default.writeFileSync(path_1.default.join(Editor.Project.path, 'tsconfig.json'), data, 'utf-8');

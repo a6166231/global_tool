@@ -16,17 +16,17 @@
     "contributions": {
         "menu": [
             {
-                "path": "www",
+                "path": "游戏扩展/ts-check",
                 "label": "tsc",
                 "message": "start-build"
             },
             {
-                "path": "www",
+                "path": "游戏扩展/ts-check",
                 "label": "tsc-no-filter",
                 "message": "start-build-no-filter"
             },
             {
-                "path": "www",
+                "path": "游戏扩展/ts-check",
                 "label": "tsc-open",
                 "message": "start-build-open"
             }
