@@ -6,7 +6,8 @@ export interface IComponentProp {
     custom?: boolean;
     show?: boolean | ((...p) => boolean);
     enum?: any,
-    progress?: { min?: number, max: number, step?: number },
+    progress?: { min?: number, max: number, step?: number, touchstart?: any, touchmove?: any, touchend?: any, touchcancle?: any },
+    dropList?: () => Array<any>,
 }
 
 export class ComponentManager {
@@ -39,6 +40,8 @@ export class ComponentManager {
                 return new CSFontStyleLabel()
             case 'GoodsNode':
                 return new CSGoodsNode()
+            case 'sp.Skeleton':
+                return new CCSkeleton(componentGetter);
             default:
                 return null
         }
@@ -169,6 +172,57 @@ class CCProgressBarModel extends ComponentViewModelBase {
     props: IComponentProp[] = [
         { name: 'Progress', key: 'progress', progress: { max: 1, step: 0.1 } },
     ];
+}
+
+class CCSkeleton extends ComponentGetterViewModel {
+    props: IComponentProp[] = [
+        { name: 'Animation', key: 'animation', dropList: () => Object.keys(this.component.skeletonData._skeletonJson.animations) },
+        { name: 'Skin', key: 'skin', custom: true, dropList: () => this.component.skeletonData._skeletonJson.skins.map(v => v.name) },
+        { name: 'TimeScale', key: 'timeScale' },
+        { name: 'Loop', key: 'loop' },
+        { name: 'Color', key: 'color' },
+        { name: "Progress", key: 'progress', custom: true, progress: { max: 1, step: 0.05, touchstart: this.touchstart.bind(this), touchmove: this.touchmove.bind(this), touchend: this.touchend.bind(this) } },
+    ];
+
+    private _bakScale: number = 1
+
+    touchstart() {
+        this._bakScale = this.component.timeScale
+        this.component.timeScale = 0
+    }
+
+    touchmove() {
+    }
+
+    touchend() {
+        this.component.timeScale = this._bakScale
+    }
+
+    set skin(str: string) {
+        this.component.setSkin(str)
+    }
+    get skin() {
+        return this.component._skeleton.skin?.name || ''
+    }
+
+    get progress() {
+        let track = this.component.getState()?.tracks?.[0]
+        if (track) {
+            return (track.trackTime % track.animationEnd / track.animationEnd)
+        } else {
+            return 0
+        }
+    }
+
+    set progress(per: number) {
+        let state = this.component.getState()
+        let track = state?.tracks?.[0]
+        if (track) {
+            track.trackTime = per * track.animationEnd
+            state.apply(this.component._skeleton)
+        }
+    }
+
 }
 
 

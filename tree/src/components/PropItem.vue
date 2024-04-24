@@ -4,11 +4,17 @@
     <el-select size="small" v-model="model[propKey]" v-if="Boolean(propData.enum)">
       <el-option v-for="item in CustomModel.CEnum" :key="item.value" :label="item.label" :value="item.value" />
     </el-select>
+    <el-select size="small" v-model="model[propKey]" v-if="propData.dropList">
+      <el-option v-for="item of propData.dropList()" :key="item" :label="item" :value="item" />
+    </el-select>
     <div style="display:contents" v-else-if="Boolean(propData.progress)">
       <el-input v-model="model[propKey]" style="width: 50px;" />
       <el-slider v-model="model[propKey]" style="width: 130;padding:15px 10px" size="small"
         :min="propData.progress.min || 0" :max="propData.progress.max || 100"
-        :step="propData.progress.step || propData.progress.max ? propData.progress.max / 10 : 1" />
+        :step="propData.progress.step || propData.progress.max ? propData.progress.max / 10 : 1" 
+        @mousemove="propData.progress.touchmove"
+        @mouseenter="propData.progress.touchstart" @mouseleave="propData.progress.touchend"
+        />
     </div>
     <el-input v-model="CustomModel.font" readonly="true" style="flex: 1" v-else-if="propKey == 'font'" />
     <el-input-number v-model="CustomModel.numVal" :precision="2" size="small" controls-position="right" style="flex: 1"
