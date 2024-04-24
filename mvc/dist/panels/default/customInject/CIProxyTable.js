@@ -14,7 +14,7 @@ class CIProxyTable extends CIBase_1.CIBase {
         if (!varMemberList)
             return;
         for (let name of (this._CIItemData.readyList || [])) {
-            varMemberList.addProperty(`${name}: "${name}", // ${this._CIItemData.comment}`);
+            varMemberList.addProperty(`${name}: "${name}", ${this._CIItemData.comment.length > 0 ? (' //' + this._CIItemData.comment + '\n') : ""}`);
         }
     }
 }

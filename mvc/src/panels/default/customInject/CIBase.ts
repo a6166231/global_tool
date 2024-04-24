@@ -5,7 +5,7 @@
  * 不同的类的注入内容方式不同，需要解析各自的结构后进行分析插入代码
  */
 
-import { join } from 'path';
+import path, { join } from 'path';
 module.paths.push(join(Editor.App.path, 'node_modules'));
 import { SourceFile } from "ts-morph"
 import { AST } from '../ts-morph/AST'
@@ -77,6 +77,27 @@ export abstract class CIBase<T = string> {
             await this.sourceFile.save();
         } catch (error) {
             console.log(`保存失败：${this.sourceFile.getFilePath()}. `, error)
+        }
+    }
+
+    /** import列表注入 */
+    public static async injectImport(vResponseImport: Array<string>, sourceFile: SourceFile, injectFile: SourceFile) {
+        if (!vResponseImport.length) return;
+        let project = await AST.loadDirectoryAtPath(path.dirname(sourceFile.getFilePath()))
+        if (!project) return;
+
+        vResponseImport = Array.from(new Set(vResponseImport))
+        for (let _import of vResponseImport) {
+            if (!_import || _import.length == 0) continue
+            let importFile = project.find((v) => { return v.getBaseName() == _import + '.ts' })
+            if (!importFile) continue;
+            //直接查找导出的interface 或者 class
+            let _export = importFile.getInterface(_import) || importFile.getClass(_import)
+            if (!_export) continue
+            injectFile.addImportDeclaration({
+                moduleSpecifier: injectFile.getRelativePathTo(join(importFile.getDirectoryPath(), importFile.getBaseNameWithoutExtension())),
+                defaultImport: _export.getName()
+            })
         }
     }
 }

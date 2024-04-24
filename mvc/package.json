@@ -29,7 +29,7 @@
     },
     "contributions": {
         "menu": [{
-            "path": "mvc",
+            "path": "游戏扩展/mvc",
             "label": "open",
             "message": "open-mvc-panel"
         }],

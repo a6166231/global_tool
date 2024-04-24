@@ -12,7 +12,7 @@ export class CINoticeTable extends CIBase {
         let list = noticeTableEnum?.getLastChildByKindOrThrow(SyntaxKind.SyntaxList);
         if (!noticeTableEnum) return;
 
-        list?.addChildText(`// ${this._CIItemData.comment}`);
+        list?.addChildText(`${this._CIItemData!.comment!.length > 0 ? ('//' + this._CIItemData.comment) : ""}`);
         for (let notice of (this._CIItemData.readyList || [])) {
             if (noticeTableEnum!.getMember(notice)) {
                 console.warn('消息已经存在：', notice)

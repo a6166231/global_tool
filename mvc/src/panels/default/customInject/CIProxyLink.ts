@@ -8,38 +8,22 @@ export class CIProxyLink extends CIBase {
 
     async readyToInject() {
         //该proxy解析
-        this.proxyFile = await AST.formatSourceByStr(join(Editor.Project.path, this._CIItemData.opath!.replace('db:', '') + '.ts'), this._CIItemData.buffer!)!;
+        this.proxyFile = await AST.formatSourceByStr(this._CIItemData.opath!.replace('db:', ''), this._CIItemData.buffer!)!;
         if (this._CIItemData.fpath) {
             let extName = extname(this._CIItemData.fpath!)
             let fileName = basename(this._CIItemData.fpath!).replace(extName, '')
             //解析class的方法 太太太费性能了
             let vResponseImport = this._injectReqRes(fileName)
-            //import插入
-            this._injectImportList(vResponseImport)
-        }
-    }
 
-    /** import列表 */
-    private async _injectImportList(vResponseImport: string[]) {
-        if (!vResponseImport.length) return;
-        let project = await AST.loadDirectoryAtPath(path.dirname(this.sourceFile.getFilePath()))
-        if (!project) return;
-        for (let _import of vResponseImport) {
-            if (!_import || _import.length == 0) continue
-            let importFile = project.find((v) => { return v.getBaseName() == _import + '.ts' })
-            if (!importFile) continue;
-            let _interface = importFile.getInterface(_import)
-            if (!_interface) return
-            this.proxyFile.addImportDeclaration({
-                moduleSpecifier: this.proxyFile.getRelativePathTo(join(importFile.getDirectoryPath(), importFile.getBaseNameWithoutExtension())),
-                defaultImport: _interface.getName()
-            })
+            // 非预览状态再注入import 否则浪费性能
+            // import插入
+            !this._CIItemData.bPreview && CIBase.injectImport(vResponseImport, this.sourceFile, this.proxyFile)
         }
     }
 
     /** 请求、返回 */
     private _injectReqRes(fileName: string) {
-        let vResponseImport: string[] = []
+        let vResponseImport: string[] = [fileName]
         let modelClass = this.sourceFile.getClass(fileName)
         if (!modelClass) return vResponseImport
 

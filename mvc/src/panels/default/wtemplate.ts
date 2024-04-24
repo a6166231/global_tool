@@ -1,4 +1,4 @@
-import path from "path";
+import path, { join } from "path";
 import { TemplateModel, getCfgJson } from "../../main";
 import { AssetItem, MVCModel, MVCModelName, ScriptLinkModel } from "./MVCModel";
 import Utils from "./util";
@@ -11,6 +11,7 @@ import { CIWorldProxyTable } from "./customInject/CIWorldProxyTable";
 import { CIProxyLink } from "./customInject/CIProxyLink";
 import { CIProxyTable } from "./customInject/CIProxyTable";
 import { CIJumpLayerProxy, JumpLayerProxyData } from "./customInject/CIJumpLayerProxy";
+import { CIMediatorLink } from "./customInject/CIMediatorLink";
 
 export enum TemplateStr {
     Author = '<%Author%>',
@@ -72,8 +73,7 @@ export const TemplateScriptMap = {
     noticeOpenStr: `Layer_${TemplateStr.InterfaceClassName}_Open`,
     noticeCloseStr: `Layer_${TemplateStr.InterfaceClassName}_Close`,
 
-    noticeFuncStr: `
-    public RegisterNotification(callMap: Map<NoticeTable, DisposeHandle>): void {
+    noticeFuncStr: `public RegisterNotification(callMap: Map<NoticeTable, DisposeHandle>): void {
         callMap.set(Global.NTable.Layer_${TemplateStr.InterfaceClassName}_Open, this.OpenLayer);
         callMap.set(Global.NTable.Layer_${TemplateStr.InterfaceClassName}_Close, this.CloseLayer);
     }`
@@ -95,7 +95,7 @@ export interface TemplateCIDataModel<T = string> {
     buffer?: string,
     /** 当前文件source路径 */
     fpath?: string,
-    /** 机场插入的字符集 */
+    /** 即将插入的字符集 */
     readyList?: Array<T>,
     /** 输出路径 */
     opath?: string,
@@ -103,6 +103,8 @@ export interface TemplateCIDataModel<T = string> {
     comment?: string,
     /** 相关文件路径 */
     lpath?: string,
+    /** 是否是预览状态 */
+    bPreview?: boolean,
 }
 
 export interface TemplateExportModel<T = any> {
@@ -119,13 +121,7 @@ export class wtemplate {
         str = this.formatStrByTemplate(str, (new Date()).toString(), TemplateStr.Time);
         str = this.formatStrByTemplate(str, param.path + '/' + param.scriptName + '.ts', TemplateStr.URL);
         str = this.formatStrByTemplate(str, param.userInfo.nickname, TemplateStr.Author);
-        let exportModel = await this.formatClassInterface(str, param, bPreview)
-        // if (bPreview && exportModel) {
-        //     for (let CIItem of (exportModel.CIList || [])) {
-        //         await CIBase.create(CIItem)
-        //     }
-        // }
-        return exportModel;
+        return await this.formatClassInterface(str, param, bPreview);
     }
 
     public static async formatPrefab(fname: string) {
@@ -165,9 +161,28 @@ export class wtemplate {
             str,
             CIList: [],
         }
+        let linkPath = null
+        //extends
+        if (mvc.layer && mvc.mediator?.link?.status) {
+            linkPath = join(mvc.layer.path.replace('project://', ''), mvc.layer.name + '.ts')
+            linkLayerName = mvc.layer.name
+            //mediator 绑定 layer
+            let extendsStr = `extends ${extendsCls}`;
+            str = str.replace(extendsStr, `${extendsStr}<${linkLayerName}>`)
+            let constructorStr = `super(${param.scriptName}.NAME)`
+            str = str.replace(constructorStr, mvc.layer.constAppend ? TemplateScriptMap.mediatorConstructor : TemplateScriptMap.mediatorConstructor2)
+            str = this.formatStrByTemplate(str, constructorStr, TemplateStr.Constructor)
+            str = this.formatStrByTemplate(str, linkLayerName, TemplateStr.InterfaceClassName)
+            str = this.formatStrByTemplate(str, mvc.layer.appendPath || "", TemplateStr.AppendPath)
 
-        if (linkObj && linkObj.item && !linkObj.item.dropLinkHiddent) {
+            let index = str.indexOf('public RegisterNotification');
+            if (index >= 0) {
+                str = str.slice(0, index) + this.formatNoticeListener(linkLayerName);
+                str += '\n}'
+            }
+        } else if (linkObj && linkObj.item && !linkObj.item.dropLinkHiddent) {
             if (linkObj.status && linkObj.script) {
+                linkPath = linkObj.script.path.replace(Editor.Project.path, '')
                 linkLayerName = linkObj.script.trueName
                 //mediator 绑定 目标layer
                 let extendsStr = `extends ${extendsCls}`;
@@ -183,36 +198,18 @@ export class wtemplate {
                     str += '\n}'
                 }
             }
-        } else {
-            //extends
-            if (mvc.layer && mvc.mediator?.link?.status) {
-                linkLayerName = mvc.layer.name
-                //mediator 绑定 layer
-                let extendsStr = `extends ${extendsCls}`;
-                str = str.replace(extendsStr, `${extendsStr}<${linkLayerName}>`)
-                let constructorStr = `super(${param.scriptName}.NAME)`
-                str = str.replace(constructorStr, mvc.layer.constAppend ? TemplateScriptMap.mediatorConstructor : TemplateScriptMap.mediatorConstructor2)
-                str = this.formatStrByTemplate(str, constructorStr, TemplateStr.Constructor)
-                str = this.formatStrByTemplate(str, linkLayerName, TemplateStr.InterfaceClassName)
-                str = this.formatStrByTemplate(str, mvc.layer.appendPath || "", TemplateStr.AppendPath)
-
-                let index = str.indexOf('public RegisterNotification');
-                if (index >= 0) {
-                    str = str.slice(0, index) + this.formatNoticeListener(linkLayerName);
-                    str += '\n}'
-                }
-            }
         }
 
+        //此处不保存 且 要提前加载 所以直接create
+        let link = await CIBase.create({
+            CIWay: CIMediatorLink,
+            lpath: linkPath!,
+            // fpath: linkObj?.script?.path.replace(Editor.Project.path, ''),
+            buffer: str,
+            opath: path.join(Editor.Project.path, param.path, param.scriptName + '.ts').replace('db:', ''),
+        })
+        str = link.getFullText()
         if (!bPreview) {
-            //此处不保存 且 要提前加载 所以直接create
-            await CIBase.create({
-                CIWay: CIBase,
-                fpath: linkObj?.script?.path.replace(Editor.Project.path, ''),
-                buffer: str,
-                opath: path.join(Editor.Project.path, param.path, param.scriptName + '.ts').replace('db:', ''),
-            })
-
             if (linkLayerName.length) {
                 //noticeTable中插入消息
                 exportModel.CIList!.push({
@@ -276,6 +273,7 @@ export class wtemplate {
             fpath: linkObj?.script?.path.replace(Editor.Project.path, ''),
             buffer: str,
             opath: path.join(Editor.Project.path, param.path, param.scriptName + '.ts').replace('db:', ''),
+            bPreview,
         })
         str = ci.getFullText()
         if (!bPreview) {

@@ -402,7 +402,7 @@ module.exports = Editor.Panel.define({
             //@ts-ignore
             let ppath = path.value.replace(projectHead, dbHead)
             //@ts-ignore
-            let model = await this.formatScriptTemplate(ppath, lb.value, obj.data, userInfo, true)
+            let model = await this.formatScriptTemplate(ppath, lb.value, obj.data, userInfo, window['mvcDebug'] ? false : true)
             this.$.mainCode.innerHTML = model.str
         },
         /** 格式化脚本模板 */

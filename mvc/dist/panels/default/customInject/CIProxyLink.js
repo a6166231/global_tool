@@ -1,32 +1,9 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CIProxyLink = void 0;
 const CIBase_1 = require("./CIBase");
 const AST_1 = require("../ts-morph/AST");
-const path_1 = __importStar(require("path"));
+const path_1 = require("path");
 class CIProxyLink extends CIBase_1.CIBase {
     constructor() {
         super(...arguments);
@@ -34,41 +11,20 @@ class CIProxyLink extends CIBase_1.CIBase {
     }
     async readyToInject() {
         //该proxy解析
-        this.proxyFile = await AST_1.AST.formatSourceByStr((0, path_1.join)(Editor.Project.path, this._CIItemData.opath.replace('db:', '') + '.ts'), this._CIItemData.buffer);
+        this.proxyFile = await AST_1.AST.formatSourceByStr(this._CIItemData.opath.replace('db:', ''), this._CIItemData.buffer);
         if (this._CIItemData.fpath) {
             let extName = (0, path_1.extname)(this._CIItemData.fpath);
             let fileName = (0, path_1.basename)(this._CIItemData.fpath).replace(extName, '');
             //解析class的方法 太太太费性能了
             let vResponseImport = this._injectReqRes(fileName);
-            //import插入
-            this._injectImportList(vResponseImport);
-        }
-    }
-    /** import列表 */
-    async _injectImportList(vResponseImport) {
-        if (!vResponseImport.length)
-            return;
-        let project = await AST_1.AST.loadDirectoryAtPath(path_1.default.dirname(this.sourceFile.getFilePath()));
-        if (!project)
-            return;
-        for (let _import of vResponseImport) {
-            if (!_import || _import.length == 0)
-                continue;
-            let importFile = project.find((v) => { return v.getBaseName() == _import + '.ts'; });
-            if (!importFile)
-                continue;
-            let _interface = importFile.getInterface(_import);
-            if (!_interface)
-                return;
-            this.proxyFile.addImportDeclaration({
-                moduleSpecifier: this.proxyFile.getRelativePathTo((0, path_1.join)(importFile.getDirectoryPath(), importFile.getBaseNameWithoutExtension())),
-                defaultImport: _interface.getName()
-            });
+            // 非预览状态再注入import 否则浪费性能
+            // import插入
+            !this._CIItemData.bPreview && CIBase_1.CIBase.injectImport(vResponseImport, this.sourceFile, this.proxyFile);
         }
     }
     /** 请求、返回 */
     _injectReqRes(fileName) {
-        let vResponseImport = [];
+        let vResponseImport = [fileName];
         let modelClass = this.sourceFile.getClass(fileName);
         if (!modelClass)
             return vResponseImport;

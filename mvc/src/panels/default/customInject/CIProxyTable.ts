@@ -9,7 +9,7 @@ export class CIProxyTable extends CIBase {
         let varMemberList = this.sourceFile.getVariableDeclaration(this._sProxyTable)?.getFirstChildByKindOrThrow(SyntaxKind.ObjectLiteralExpression)
         if (!varMemberList) return;
         for (let name of (this._CIItemData.readyList || [])) {
-            varMemberList.addProperty(`${name}: "${name}", // ${this._CIItemData.comment}`);
+            varMemberList.addProperty(`${name}: "${name}", ${this._CIItemData!.comment!.length > 0 ? (' //' + this._CIItemData.comment + '\n') : ""}`);
         }
     }
 

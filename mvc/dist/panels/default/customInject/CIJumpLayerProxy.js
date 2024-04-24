@@ -17,7 +17,7 @@ class CIJumpLayerProxy extends CIBase_1.CIBase {
         let obj = expressStatement.getExpression().getFirstChildByKind(ts_morph_1.SyntaxKind.ObjectLiteralExpression);
         for (let item of (this._CIItemData.readyList || [])) {
             // item.open
-            obj.addProperty(`// ${this._CIItemData.comment}\n[LT.${item.layer}]: { attach: NT.${item.open}, unAttach: NT.${item.close} }`);
+            obj.addProperty(`${this._CIItemData.comment.length > 0 ? ('//' + this._CIItemData.comment + '\n') : ""}[LT.${item.layer}]: { attach: NT.${item.open}, unAttach: NT.${item.close} }`);
         }
     }
 }

@@ -9,7 +9,7 @@ export class CILayerTable extends CIBase {
         let varMemberList = this.sourceFile.getVariableDeclaration(this._sLayerTable)?.getFirstChildByKindOrThrow(SyntaxKind.ObjectLiteralExpression)
         if (!varMemberList) return;
         for (let name of (this._CIItemData.readyList || [])) {
-            varMemberList.addProperty(`${name}, // ${this._CIItemData.comment}`);
+            varMemberList.addProperty(`${name}: 99999,${this._CIItemData!.comment!.length > 0 ? ('//' + this._CIItemData.comment) : ""}`);
         }
     }
 

@@ -1,10 +1,33 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.wtemplate = exports.TemplateScriptMap = exports.TemplateStr = void 0;
-const path_1 = __importDefault(require("path"));
+const path_1 = __importStar(require("path"));
 const main_1 = require("../../main");
 const MVCModel_1 = require("./MVCModel");
 const util_1 = __importDefault(require("./util"));
@@ -17,6 +40,7 @@ const CIWorldProxyTable_1 = require("./customInject/CIWorldProxyTable");
 const CIProxyLink_1 = require("./customInject/CIProxyLink");
 const CIProxyTable_1 = require("./customInject/CIProxyTable");
 const CIJumpLayerProxy_1 = require("./customInject/CIJumpLayerProxy");
+const CIMediatorLink_1 = require("./customInject/CIMediatorLink");
 var TemplateStr;
 (function (TemplateStr) {
     TemplateStr["Author"] = "<%Author%>";
@@ -62,8 +86,7 @@ exports.TemplateScriptMap = {
     }`,
     noticeOpenStr: `Layer_${TemplateStr.InterfaceClassName}_Open`,
     noticeCloseStr: `Layer_${TemplateStr.InterfaceClassName}_Close`,
-    noticeFuncStr: `
-    public RegisterNotification(callMap: Map<NoticeTable, DisposeHandle>): void {
+    noticeFuncStr: `public RegisterNotification(callMap: Map<NoticeTable, DisposeHandle>): void {
         callMap.set(Global.NTable.Layer_${TemplateStr.InterfaceClassName}_Open, this.OpenLayer);
         callMap.set(Global.NTable.Layer_${TemplateStr.InterfaceClassName}_Close, this.CloseLayer);
     }`
@@ -76,13 +99,7 @@ class wtemplate {
         str = this.formatStrByTemplate(str, (new Date()).toString(), TemplateStr.Time);
         str = this.formatStrByTemplate(str, param.path + '/' + param.scriptName + '.ts', TemplateStr.URL);
         str = this.formatStrByTemplate(str, param.userInfo.nickname, TemplateStr.Author);
-        let exportModel = await this.formatClassInterface(str, param, bPreview);
-        // if (bPreview && exportModel) {
-        //     for (let CIItem of (exportModel.CIList || [])) {
-        //         await CIBase.create(CIItem)
-        //     }
-        // }
-        return exportModel;
+        return await this.formatClassInterface(str, param, bPreview);
     }
     static async formatPrefab(fname) {
         let prefab = await util_1.default.readFile(path_1.default.join(Editor.Package.getPath(package_json_1.default.name) || '', 'src/prefab/PrefabTemplate.prefab'));
@@ -113,15 +130,35 @@ class wtemplate {
         return exportModel;
     }
     static async _formatMediator(str, param, mvc, extendsCls, bPreview) {
-        var _a, _b, _c, _d;
+        var _a, _b, _c;
         let linkObj = ((_a = mvc.mediator) === null || _a === void 0 ? void 0 : _a.link) || {};
         let linkLayerName = '';
         let exportModel = {
             str,
             CIList: [],
         };
-        if (linkObj && linkObj.item && !linkObj.item.dropLinkHiddent) {
+        let linkPath = null;
+        //extends
+        if (mvc.layer && ((_c = (_b = mvc.mediator) === null || _b === void 0 ? void 0 : _b.link) === null || _c === void 0 ? void 0 : _c.status)) {
+            linkPath = (0, path_1.join)(mvc.layer.path.replace('project://', ''), mvc.layer.name + '.ts');
+            linkLayerName = mvc.layer.name;
+            //mediator 绑定 layer
+            let extendsStr = `extends ${extendsCls}`;
+            str = str.replace(extendsStr, `${extendsStr}<${linkLayerName}>`);
+            let constructorStr = `super(${param.scriptName}.NAME)`;
+            str = str.replace(constructorStr, mvc.layer.constAppend ? exports.TemplateScriptMap.mediatorConstructor : exports.TemplateScriptMap.mediatorConstructor2);
+            str = this.formatStrByTemplate(str, constructorStr, TemplateStr.Constructor);
+            str = this.formatStrByTemplate(str, linkLayerName, TemplateStr.InterfaceClassName);
+            str = this.formatStrByTemplate(str, mvc.layer.appendPath || "", TemplateStr.AppendPath);
+            let index = str.indexOf('public RegisterNotification');
+            if (index >= 0) {
+                str = str.slice(0, index) + this.formatNoticeListener(linkLayerName);
+                str += '\n}';
+            }
+        }
+        else if (linkObj && linkObj.item && !linkObj.item.dropLinkHiddent) {
             if (linkObj.status && linkObj.script) {
+                linkPath = linkObj.script.path.replace(Editor.Project.path, '');
                 linkLayerName = linkObj.script.trueName;
                 //mediator 绑定 目标layer
                 let extendsStr = `extends ${extendsCls}`;
@@ -137,33 +174,16 @@ class wtemplate {
                 }
             }
         }
-        else {
-            //extends
-            if (mvc.layer && ((_c = (_b = mvc.mediator) === null || _b === void 0 ? void 0 : _b.link) === null || _c === void 0 ? void 0 : _c.status)) {
-                linkLayerName = mvc.layer.name;
-                //mediator 绑定 layer
-                let extendsStr = `extends ${extendsCls}`;
-                str = str.replace(extendsStr, `${extendsStr}<${linkLayerName}>`);
-                let constructorStr = `super(${param.scriptName}.NAME)`;
-                str = str.replace(constructorStr, mvc.layer.constAppend ? exports.TemplateScriptMap.mediatorConstructor : exports.TemplateScriptMap.mediatorConstructor2);
-                str = this.formatStrByTemplate(str, constructorStr, TemplateStr.Constructor);
-                str = this.formatStrByTemplate(str, linkLayerName, TemplateStr.InterfaceClassName);
-                str = this.formatStrByTemplate(str, mvc.layer.appendPath || "", TemplateStr.AppendPath);
-                let index = str.indexOf('public RegisterNotification');
-                if (index >= 0) {
-                    str = str.slice(0, index) + this.formatNoticeListener(linkLayerName);
-                    str += '\n}';
-                }
-            }
-        }
+        //此处不保存 且 要提前加载 所以直接create
+        let link = await CIBase_1.CIBase.create({
+            CIWay: CIMediatorLink_1.CIMediatorLink,
+            lpath: linkPath,
+            // fpath: linkObj?.script?.path.replace(Editor.Project.path, ''),
+            buffer: str,
+            opath: path_1.default.join(Editor.Project.path, param.path, param.scriptName + '.ts').replace('db:', ''),
+        });
+        str = link.getFullText();
         if (!bPreview) {
-            //此处不保存 且 要提前加载 所以直接create
-            await CIBase_1.CIBase.create({
-                CIWay: CIBase_1.CIBase,
-                fpath: (_d = linkObj === null || linkObj === void 0 ? void 0 : linkObj.script) === null || _d === void 0 ? void 0 : _d.path.replace(Editor.Project.path, ''),
-                buffer: str,
-                opath: path_1.default.join(Editor.Project.path, param.path, param.scriptName + '.ts').replace('db:', ''),
-            });
             if (linkLayerName.length) {
                 //noticeTable中插入消息
                 exportModel.CIList.push({
@@ -225,6 +245,7 @@ class wtemplate {
             fpath: (_a = linkObj === null || linkObj === void 0 ? void 0 : linkObj.script) === null || _a === void 0 ? void 0 : _a.path.replace(Editor.Project.path, ''),
             buffer: str,
             opath: path_1.default.join(Editor.Project.path, param.path, param.scriptName + '.ts').replace('db:', ''),
+            bPreview,
         });
         str = ci.getFullText();
         if (!bPreview) {

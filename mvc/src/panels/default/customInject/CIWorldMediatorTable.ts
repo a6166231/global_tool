@@ -8,7 +8,7 @@ export class CIWorldMediatorTable extends CIBase {
         let varMemberList = this.sourceFile.getVariableDeclaration(this._sWorldMediatorTable)?.getFirstChildByKindOrThrow(SyntaxKind.ArrayLiteralExpression)
         if (!varMemberList) return;
         for (let name of (this._CIItemData.readyList || [])) {
-            varMemberList.addElement(`// ${this._CIItemData.comment}\n${name + ','}`);
+            varMemberList.addElement(`${this._CIItemData!.comment!.length > 0 ? ('//' + this._CIItemData.comment + '\n') : ""}${name + ','}`);
             await this.injectImportClass(name, this._CIItemData.lpath!.replace('db:', ''))
         }
 

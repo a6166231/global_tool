@@ -14,7 +14,7 @@ class CINoticeTable extends CIBase_1.CIBase {
         let list = noticeTableEnum === null || noticeTableEnum === void 0 ? void 0 : noticeTableEnum.getLastChildByKindOrThrow(ts_morph_1.SyntaxKind.SyntaxList);
         if (!noticeTableEnum)
             return;
-        list === null || list === void 0 ? void 0 : list.addChildText(`// ${this._CIItemData.comment}`);
+        list === null || list === void 0 ? void 0 : list.addChildText(`${this._CIItemData.comment.length > 0 ? ('//' + this._CIItemData.comment) : ""}`);
         for (let notice of (this._CIItemData.readyList || [])) {
             if (noticeTableEnum.getMember(notice)) {
                 console.warn('消息已经存在：', notice);

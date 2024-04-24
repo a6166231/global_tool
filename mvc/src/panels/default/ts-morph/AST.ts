@@ -39,9 +39,9 @@ export class AST {
         path = path.replace(new RegExp('\\\\', 'g'), '/')
         let dir = AST.getDirByPath(path);
         if (dir) {
-            return dir.getDescendantSourceFiles()
+            return dir.addSourceFilesAtPaths('**/*.ts')
         } else {
-            return (await AST.Project.addDirectoryAtPath(path)).getDescendantSourceFiles();
+            return (await AST.Project.addDirectoryAtPath(path, { recursive: true })).addSourceFilesAtPaths('**/*.ts');
         }
     }
 }

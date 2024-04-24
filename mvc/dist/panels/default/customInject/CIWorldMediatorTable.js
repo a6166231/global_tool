@@ -14,7 +14,7 @@ class CIWorldMediatorTable extends CIBase_1.CIBase {
         if (!varMemberList)
             return;
         for (let name of (this._CIItemData.readyList || [])) {
-            varMemberList.addElement(`// ${this._CIItemData.comment}\n${name + ','}`);
+            varMemberList.addElement(`${this._CIItemData.comment.length > 0 ? ('//' + this._CIItemData.comment + '\n') : ""}${name + ','}`);
             await this.injectImportClass(name, this._CIItemData.lpath.replace('db:', ''));
         }
     }

@@ -21,7 +21,7 @@ export class CIJumpLayerProxy<T extends JumpLayerProxyData = JumpLayerProxyData>
         let obj = expressStatement.getExpression().getFirstChildByKind(SyntaxKind.ObjectLiteralExpression) as ObjectLiteralExpression
         for (let item of (this._CIItemData.readyList || [])) {
             // item.open
-            obj.addProperty(`// ${this._CIItemData.comment}\n[LT.${item.layer}]: { attach: NT.${item.open}, unAttach: NT.${item.close} }`)
+            obj.addProperty(`${this._CIItemData!.comment!.length > 0 ? ('//' + this._CIItemData.comment + '\n') : ""}[LT.${item.layer}]: { attach: NT.${item.open}, unAttach: NT.${item.close} }`)
         }
 
     }
