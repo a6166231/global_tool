@@ -14,7 +14,7 @@ class CIWorldProxyTable extends CIBase_1.CIBase {
         if (!varMemberList)
             return;
         for (let name of (this._CIItemData.readyList || [])) {
-            varMemberList === null || varMemberList === void 0 ? void 0 : varMemberList.addElement(`${this._CIItemData.comment.length > 0 ? (' //' + this._CIItemData.comment + '\n') : ""}${name + ','}`);
+            varMemberList === null || varMemberList === void 0 ? void 0 : varMemberList.addElement(`${this._CIItemData.comment.length > 0 ? ('//' + this._CIItemData.comment + '\n') : ""}${name + ','}`);
             await this.injectImportClass(name, this._CIItemData.lpath.replace('db:', ''));
         }
     }

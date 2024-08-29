@@ -20,7 +20,7 @@
     <el-tree-v2 ref="treeView" :props="defaultProps" empty-text="正在加载场景" :highlight-current="true"
       :expand-on-click-node="false" @current-change="handleCurrentNodeChange" :height="treeViewHeight">
       <template #default="{ node }">
-        <span :class="{ 'node-hide': !node.data.active }">{{ node.label }}</span>
+        <span @dblclick="Utils.jumpPrefab(node.data)" :class="{ 'node-hide': !node.data.active , 'bprefab': node.data.bprefab }">{{ (node.data.bprefab ? '[P]' : '') + node.label }}</span>
       </template>
     </el-tree-v2>
   </div>
@@ -69,6 +69,7 @@ interface TreeNode {
   active: boolean;
   children?: TreeNode[];
   path: string[];
+  bprefab: boolean;
 }
 
 let updateKey = ref(1);
@@ -148,12 +149,13 @@ function getMatchedFiles(keyword: string) {
 
 function cloneNewNode(bakNode: TreeNode) {
   let deepNew = (bak: TreeNode, lv: number) => {
-    let node: any = {
+    let node: TreeNode = {
       name: bak.name,
       uuid: bak.uuid + `_${lv}`,
       active: bak.active,
       children: [],
-      path: [...bak.path]
+      path: [...bak.path],
+      bprefab: bak.bprefab
     }
     if (!bak.children || !bak.children.length) return node;
     for (let child of bak.children) {
@@ -210,12 +212,13 @@ function handleNodeExpandDeep(node: any) {
 function setChildren(container: TreeNode[], children: any[], path: string[]) {
   children.forEach(ccNode => {
     const childPath = path.concat(ccNode.uuid);
-    const node = {
+    const node:TreeNode = {
       uuid: ccNode.uuid,
       name: ccNode.name,
       active: ccNode.activeInHierarchy,
       children: [],
       path: childPath,
+      bprefab: Boolean(ccNode.prefab?.root?.uuid == ccNode.uuid) ? ccNode.prefab?.asset?.uuid: false
     };
     if (ccNode.children && ccNode.children.length > 0) {
       setChildren(node.children, ccNode.children, childPath);
@@ -300,5 +303,10 @@ span {
 
 .node-hide {
   opacity: 0.3;
+}
+
+.bprefab {
+  font-weight: bold;
+  color: #39ff95 ;
 }
 </style>

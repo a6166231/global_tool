@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { nodeWidgetControll } from "./nodeWidgetControll";
 import { rayCaughtControll } from "./rayCaughtControll";
+import { ImportMap } from "./ImportMap";
 
 export default class Utils {
     static checkNodeValid(ccNode: any) {
@@ -32,6 +33,41 @@ export default class Utils {
         console.log('temp' + i);
         // @ts-ignore
         console.log(window['temp' + i]);
+    }
+
+    private static _iframe: HTMLAnchorElement
+    private static getIFrameEle() {
+        if (this._iframe) return this._iframe
+        this._iframe = document.createElement('iframe');
+        this._iframe.style.display = 'none';
+        document.body.appendChild(this._iframe);
+        return this._iframe
+    }
+
+    static jumpPrefab(pfb: any) {
+        if (!pfb.bprefab) return
+        let uuid = pfb.bprefab
+        var iframe = this.getIFrameEle()
+        iframe.src = `http://localhost:${location.port}/mvc/open-prefab?uuid=${uuid}`;
+    }
+
+    static jumpFile(comp: any) {
+        ImportMap.getClassAbsPathByComponent(comp).then(async paths => {
+            var iframe = this.getIFrameEle()
+            // var link = this.getLinkEle()
+            for (let path of paths) {
+                if (path && path.length) {
+                    iframe.src = `http://localhost:${location.port}/mvc/open-script?path=${path}`;
+                    await new Promise((resolve, reject) => {
+                        let func = () => {
+                            resolve()
+                            iframe.removeEventListener('load', func)
+                        }
+                        iframe.addEventListener('load', func);
+                    })
+                }
+            }
+        })
     }
 
     static drawNodeRect(target: any) {
@@ -79,8 +115,8 @@ export default class Utils {
 
     static addAnimation(id: number, node: Node) {
         let canvasNode = new cc.Node('anim_' + id);
-        if (globalThis.Global && globalThis.Global.FrameAnimManager) {
-            let anim = globalThis.Global.FrameAnimManager.CreateSFXAnim(id)
+        if (globalThis.Global && globalThis.Global.FrameAnimationManager) {
+            let anim = globalThis.Global.FrameAnimationManager.CreateSFXAnim(id)
             if (anim) {
                 canvasNode.removeAllChildren()
                 canvasNode.addChild(anim.node)
@@ -90,6 +126,8 @@ export default class Utils {
             } else {
                 console.log("没有此id对应的动画")
             }
+        } else {
+            console.error('globalThis.Global || globalThis.Global.FrameAnimationManager is undefined !!!  ')
         }
     }
 

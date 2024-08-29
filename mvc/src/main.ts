@@ -6,7 +6,6 @@ import { MVCModelName } from './panels/default/MVCModel';
 import Utils from './panels/default/util';
 import { AssetInfo } from '../@types/packages/asset-db/@types/public';
 import path from 'path';
-import { readFile } from 'fs-extra';
 const { promisify } = require('util');
 
 export enum TemplateType {
@@ -48,7 +47,7 @@ let cfgJson: {
 
 async function getLocalCfgJson() {
     if (!cfgJson) {
-        let json = await readFile(path.join(Editor.Package.getPath(packageJSON.name)!, 'src/cfg.json'))
+        let json = await readFileSync(path.join(Editor.Package.getPath(packageJSON.name)!, 'src/cfg.json'))
         if (json) {
             cfgJson = JSON.parse(json.toString())
         } else {
@@ -77,6 +76,17 @@ export const methods: { [key: string]: (...any: any) => any } = {
     async openMVCPanel() {
         Editor.Panel.open(packageJSON.name);
     },
+
+    focusMainWindows() {
+        let ele = require('electron')
+        let allwindows = ele.BrowserWindow?.getAllWindows() || []
+        for (let win of allwindows) {
+            win.focus()
+            win.setAlwaysOnTop(true)
+            win.setAlwaysOnTop(false)
+        }
+        ele.app.focus()
+    }
 };
 
 /**
@@ -84,7 +94,6 @@ export const methods: { [key: string]: (...any: any) => any } = {
  * @zh 扩展加载完成后触发的钩子
  */
 export async function load() {
-
 }
 
 /**
@@ -168,3 +177,27 @@ let map = async function (path: string, handler: Function) {
         });
     })
 }
+
+exports.get = [{
+    url: '/mvc/open-prefab',
+    async handle(req: any, res: any, next: any) {
+        let query = req?.query || ''
+        if (query.length == 0) return
+        console.log('ready to open prefab: ', query.uuid)
+        await Editor.Message.request('asset-db', 'open-asset', query.uuid);
+
+        Editor.Message.send('mvc', 'focus-main-windows')
+
+        res.send('success');
+    },
+}, {
+    url: '/mvc/open-script',
+    async handle(req: any, res: any, next: any) {
+        let query = req?.query || ''
+        if (query.length == 0) return
+        let ppath = 'db://' + path.relative(Editor.Project.path, query.path)
+        console.log('ready to open script: ', ppath)
+        await Editor.Message.request('asset-db', 'open-asset', ppath)
+        res.send('success');
+    },
+}];

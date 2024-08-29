@@ -6,6 +6,8 @@
 - **1.功能列表**
 
     目前可选择layer,mediator,proxy,prefab来自定义导出
+    
+    - prefab的生成可以自行定义自己的模板预制体 **/mvc/src/prefab/CustomPrefabTemplate.prefab
 - **2.总类名 <a id='2'></a>**
 
     即将导出的文件列表的所有文件的前缀名，即要做的功能的名字，修改该处的字符串会实时影响到 <a href='#4'>文件名</a> 和 <a href='#6'>文件的导出路径</a>

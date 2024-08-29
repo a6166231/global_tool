@@ -1,7 +1,7 @@
 <template>
     <div class="row">
         <el-checkbox v-model="component!.enabled" size="small" style="margin-right: 10px;" />
-        <span class="header-title" style="flex: 1;">{{ name }}</span>
+        <span class="header-title" @click="Utils.jumpFile(component)" style="flex: 1;color: chartreuse">{{ name }}</span>
         <el-button size="small" @click="Utils.outputToConsole(component)">output</el-button>
     </div>
     <PropItem v-if="model" v-for="prop in model.props" :key="prop.key" :model="prop.custom ? model : component"

@@ -125,7 +125,12 @@ export class wtemplate {
     }
 
     public static async formatPrefab(fname: string) {
-        let prefab = await Utils.readFile(path.join(Editor.Package.getPath(packageJSON.name) || '', 'src/prefab/PrefabTemplate.prefab'))
+        let ppath = path.join(Editor.Package.getPath(packageJSON.name) || '', 'src/prefab/CustomPrefabTemplate.prefab')
+        if (!Utils.existsSync(ppath)) {
+            ppath = path.join(Editor.Package.getPath(packageJSON.name) || '', 'src/prefab/PrefabTemplate.prefab')
+        }
+        if (!Utils.existsSync(ppath)) return
+        let prefab = await Utils.readFile(ppath)
         prefab = this.formatStrByTemplate(prefab, TemplateStr.PrefabTemplate, fname)
         return prefab;
     }

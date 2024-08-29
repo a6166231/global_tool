@@ -1,4 +1,4 @@
-import { readFileSync } from 'fs-extra';
+import { readFileSync } from 'fs';
 import Path, { join } from 'path';
 import { ScriptDataModel, TemplateModel, TemplateType, collectAllExtendsClass, collectFilesfunc, getTemplateList } from '../../main';
 import Utils from './util';
@@ -11,6 +11,8 @@ import { LinkItem } from './ui/linkItem';
 import { pathLockItem } from './ui/pathLockItem';
 import { CIBase } from './customInject/CIBase';
 import { AST } from './ts-morph/AST';
+import path from 'path';
+import packageJSON from '../../../package.json';
 
 /**
  * @zh 如果希望兼容 3.3 之前的版本可以使用下方的代码
@@ -319,13 +321,20 @@ module.exports = Editor.Panel.define({
             let count = 0;
             for (let obj of vReadyPrefabs) {
                 let lb = Utils.getClsNameElement(obj.item, 'layerName');
-                let path = Utils.getTagNameElement(obj.item, 'ui-file');
+                let filepath = Utils.getTagNameElement(obj.item, 'ui-file');
                 //@ts-ignore
-                let ppath = path.value.replace(projectHead, dbHead)
+                let ppath = filepath.value.replace(projectHead, dbHead)
                 //@ts-ignore
-                console.log(path.value)
+                console.log(filepath.value)
+
                 //@ts-ignore
-                await Utils.createFile(ppath + '/' + lb.value + '.prefab', await wtemplate.formatPrefab(lb.value)).catch((err) => {
+                let pfb = await wtemplate.formatPrefab(lb.value)
+                if (!pfb) {
+                    console.error(`2-2-1. 加载预制体模板失败，检查路径文件是否存在： ${path.join(Editor.Package.getPath(packageJSON.name) || '', 'src/prefab/PrefabTemplate.prefab')}`)
+                    continue
+                }
+                //@ts-ignore
+                await Utils.createFile(ppath + '/' + lb.value + '.prefab', pfb).catch((err) => {
                     console.warn(err)
                 })
                 count++;

@@ -1,10 +1,10 @@
 <template>
   <div class="row" v-if="Utils.checkPropShow(propData.show)">
     <span style="flex: 1">{{ propName }}</span>
-    <el-select size="small" v-model="model[propKey]" v-if="Boolean(propData.enum)">
+    <el-select size="small" style="flex: 1" v-model="model[propKey]" v-if="Boolean(propData.enum)">
       <el-option v-for="item in CustomModel.CEnum" :key="item.value" :label="item.label" :value="item.value" />
     </el-select>
-    <el-select size="small" v-model="model[propKey]" v-if="propData.dropList">
+    <el-select size="small" style="flex: 1" v-model="model[propKey]" v-else-if="propData.dropList">
       <el-option v-for="item of propData.dropList()" :key="item" :label="item" :value="item" />
     </el-select>
     <div style="display:contents" v-else-if="Boolean(propData.progress)">

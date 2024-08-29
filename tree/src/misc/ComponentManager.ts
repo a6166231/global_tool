@@ -40,6 +40,8 @@ export class ComponentManager {
                 return new CSFontStyleLabel()
             case 'GoodsNode':
                 return new CSGoodsNode()
+            case 'FrameAnimation':
+                return new CSFrameAnimation(componentGetter)
             case 'sp.Skeleton':
                 return new CCSkeleton(componentGetter);
             default:
@@ -129,10 +131,15 @@ class CCLabelModel extends ComponentGetterViewModel {
         { name: 'Font Size', key: 'fontSize' },
         { name: 'Line Height', key: 'lineHeight' },
         { name: 'Font', key: 'font' },
+        { name: "Cache Model", key: 'cacheMode', enum: cc.Label.CacheMode }
     ];
 }
 
 class CCRichTextModel extends CCLabelModel {
+    constructor(componentGetter: any) {
+        super()
+        this.props.push({ name: 'Max Width', key: 'maxWidth' })
+    }
 }
 
 class CCLayoutModel extends ComponentGetterViewModel {
@@ -152,6 +159,9 @@ class CCSpriteModel extends ComponentGetterViewModel {
     props: IComponentProp[] = [
         { name: 'Color', key: 'color' },
         { name: 'SpriteFrame', key: 'spriteFrame', custom: true },
+        { name: "SizeMode", key: 'sizeMode', enum: cc.Sprite.SizeMode },
+        { name: "Type", key: 'type', enum: cc.Sprite.Type },
+        { name: "Trim", key: 'trim' }
     ];
 
     get spriteFrame() {
@@ -228,15 +238,61 @@ class CCSkeleton extends ComponentGetterViewModel {
 
 /** --------------------------自定义脚本------------------------------ */
 
-class CSFontStyleLabel extends ComponentViewModelBase {
+class CSFontStyleLabel extends ComponentGetterViewModel {
     props: IComponentProp[] = [
         { name: 'Key', key: '_key' },
     ];
 }
 
-class CSGoodsNode extends ComponentViewModelBase {
+class CSGoodsNode extends ComponentGetterViewModel {
     props: IComponentProp[] = [
         { name: 'ItemId', key: 'itemId' },
         { name: 'Count', key: 'count' },
     ];
+}
+
+class CSFrameAnimation extends ComponentGetterViewModel {
+    props: IComponentProp[] = [
+        { name: 'Speed', key: 'speed', custom: true },
+        { name: 'Pause', key: 'pause', custom: true },
+        { name: 'Frame', key: 'frame', custom: true, show: () => { return this.pause } },
+    ];
+
+    get speed() {
+        return this.component?.animSpeed || 0
+    }
+
+    set speed(spd: number) {
+        try {
+            this.component.animSpeed = spd
+            this.component.updateAnimationSpeed()
+        } catch (e) {
+            console.log(e)
+        }
+    }
+
+    get pause() {
+        return !this.component?.playing
+    }
+
+    set pause(status: boolean) {
+        if (!this.component) return
+        if (status) {
+            this.component.Stop()
+        } else {
+            this.component.Play(this.component.animType, this.component.direction, this.component.animLoop, this.component.animSpeed, this.component.sequence)
+        }
+    }
+
+    get frame() {
+        return this.component?.stopFrameIndex || 0
+    }
+
+    set frame(idx: number) {
+        try {
+            this.component.StopAnimToFrameIndex(idx, this.component.animType, this.component.direction)
+        } catch (e) {
+            console.log(e)
+        }
+    }
 }

@@ -1,6 +1,8 @@
 // @ts-nocheck
 import Utils from "./Utils";
 
+const rayCaughtTag = '__ray_caught_tag__'
+
 export class rayCaughtControll {
     private _canvas;
     private _touchPos;
@@ -70,7 +72,7 @@ export class rayCaughtControll {
 
         this._touchPos = ev.getLocation();
         let canvas = cc.director.getScene();
-        let touch = this.foreachChild(canvas.getChildByName('RenderRoot'))
+        let touch = this.foreachChild(canvas)
         touch && this._drawItemRect(touch)
     }
 
@@ -88,6 +90,7 @@ export class rayCaughtControll {
         }
 
         let nodeRect = new cc.Node('nodeRect')
+        nodeRect[rayCaughtTag] = true
 
         let graphics = nodeRect.addComponent(cc.GraphicsComponent);
         let bgTransform = nodeRect.addComponent(cc.UITransformComponent);
@@ -119,6 +122,7 @@ export class rayCaughtControll {
         for (let i = node.children.length - 1; i >= 0; i--) {
             let child = node.children[i];
             if (!child.activeInHierarchy) continue;
+            if (child[rayCaughtTag]) continue
 
             if (child._uiProps.uiTransformComp && child._uiProps.uiComp && child._uiProps.uiTransformComp.hitTest(this._touchPos)) {
                 if (!(child._uiProps.uiComp instanceof cc.Graphics))

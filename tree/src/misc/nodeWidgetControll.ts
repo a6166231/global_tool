@@ -12,7 +12,9 @@ const doubleClickTimeCeil: number = 200;
  */
 export class nodeWidgetControll {
     private _canvas;
+    private _canvasCamera;
     private _node;
+    private _nodeCamera;
     private _nodeRect;
 
     private _inputListener: inputListenerControll;//输入监听器
@@ -36,6 +38,8 @@ export class nodeWidgetControll {
             this._node = null
         } else {
             this._node = node;
+
+            this._nodeCamera = node && this.getRenderCamera(node)
         }
         console.log(this._node)
         if (!this._node) {
@@ -53,6 +57,10 @@ export class nodeWidgetControll {
     }
     get node() {
         return this._node;
+    }
+
+    getRenderCamera(node) {
+        return node.getComponent(cc.UITransformComponent)?._getRenderScene().cameras.find(v => (v.visibility & node.layer) && (v.window && v.window.swapchain))
     }
 
     constructor() {
@@ -146,7 +154,14 @@ export class nodeWidgetControll {
     touchMove(ev) {
         if (!this._node) return
         this._movingFlag = true
-        let delta = ev.getDelta()
+        let delta = ev.getUIDelta()
+
+        let power = 1
+        if (this._canvasCamera && this._nodeCamera) {
+            power = this._canvasCamera.orthoHeight / this._nodeCamera.orthoHeight
+        }
+        delta.x /= power
+        delta.y /= power
 
         let pos = this._node.position
         this._node.setPosition(pos.x + delta.x, pos.y + delta.y)
@@ -173,6 +188,8 @@ export class nodeWidgetControll {
         widget.isAlignLeft = widget.isAlignRight = widget.isAlignTop = widget.isAlignBottom = true
         widget.left = widget.right = widget.top = widget.bottom = 0;
         widget.alignMode = cc.Widget.AlignMode.ALWAYS;
+
+        this._canvasCamera = this.getRenderCamera(Caught)
     }
 
     clearSelect() {

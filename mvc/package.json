@@ -38,8 +38,22 @@
                 "methods": [
                     "openMVCPanel"
                 ]
+            },
+            "focus-main-windows": {
+                "methods": [
+                    "focusMainWindows"
+                ],
+                "description": "使cc editor窗口聚焦",
+                "public": true
+            },
+            "open-prefab": {
+                "public": true
+            },
+            "open-script": {
+                "public": true
             }
-        }
+        },
+        "server": "./dist/main.js"
     },
     "author": "www",
     "editor": ">=3.7.3",

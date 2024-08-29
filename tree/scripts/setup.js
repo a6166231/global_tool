@@ -2,7 +2,7 @@ const fse = require('fs-extra');
 const path = require('path');
 
 const localTemplatePath = path.join(__dirname, '../release/');
-const projectTemplatePath = 'E:/projects/wzmb/creator_client';
+const projectTemplatePath = 'E:/projects/creator_framework/creator_client';
 
 if (!fse.existsSync(projectTemplatePath)) {
     console.error('project path not exist');

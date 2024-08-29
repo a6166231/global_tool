@@ -26,7 +26,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const fs_extra_1 = require("fs-extra");
+const fs_1 = require("fs");
 const path_1 = __importStar(require("path"));
 const main_1 = require("../../main");
 const util_1 = __importDefault(require("./util"));
@@ -38,6 +38,8 @@ const linkItem_1 = require("./ui/linkItem");
 const pathLockItem_1 = require("./ui/pathLockItem");
 const CIBase_1 = require("./customInject/CIBase");
 const AST_1 = require("./ts-morph/AST");
+const path_2 = __importDefault(require("path"));
+const package_json_1 = __importDefault(require("../../../package.json"));
 const BaseID = "id";
 let mapTemplateScript = new Map;
 let mapSelect2ScriptItem = new Map;
@@ -50,8 +52,8 @@ let _previewIndex;
 let _bAutoWidth = false;
 let _vLinkItem = [];
 module.exports = Editor.Panel.define({
-    template: (0, fs_extra_1.readFileSync)((0, path_1.join)(__dirname, '../../../static/template/default/index.html'), 'utf-8'),
-    style: (0, fs_extra_1.readFileSync)((0, path_1.join)(__dirname, '../../../static/style/default/index.css'), 'utf-8'),
+    template: (0, fs_1.readFileSync)((0, path_1.join)(__dirname, '../../../static/template/default/index.html'), 'utf-8'),
+    style: (0, fs_1.readFileSync)((0, path_1.join)(__dirname, '../../../static/style/default/index.css'), 'utf-8'),
     $: {
         body: '#body',
         app: '#MVC',
@@ -314,13 +316,19 @@ module.exports = Editor.Panel.define({
             let count = 0;
             for (let obj of vReadyPrefabs) {
                 let lb = util_1.default.getClsNameElement(obj.item, 'layerName');
-                let path = util_1.default.getTagNameElement(obj.item, 'ui-file');
+                let filepath = util_1.default.getTagNameElement(obj.item, 'ui-file');
                 //@ts-ignore
-                let ppath = path.value.replace(projectHead, dbHead);
+                let ppath = filepath.value.replace(projectHead, dbHead);
                 //@ts-ignore
-                console.log(path.value);
+                console.log(filepath.value);
                 //@ts-ignore
-                await util_1.default.createFile(ppath + '/' + lb.value + '.prefab', await wtemplate_1.wtemplate.formatPrefab(lb.value)).catch((err) => {
+                let pfb = await wtemplate_1.wtemplate.formatPrefab(lb.value);
+                if (!pfb) {
+                    console.error(`2-2-1. 加载预制体模板失败，检查路径文件是否存在： ${path_2.default.join(Editor.Package.getPath(package_json_1.default.name) || '', 'src/prefab/PrefabTemplate.prefab')}`);
+                    continue;
+                }
+                //@ts-ignore
+                await util_1.default.createFile(ppath + '/' + lb.value + '.prefab', pfb).catch((err) => {
                     console.warn(err);
                 });
                 count++;

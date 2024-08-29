@@ -102,7 +102,13 @@ class wtemplate {
         return await this.formatClassInterface(str, param, bPreview);
     }
     static async formatPrefab(fname) {
-        let prefab = await util_1.default.readFile(path_1.default.join(Editor.Package.getPath(package_json_1.default.name) || '', 'src/prefab/PrefabTemplate.prefab'));
+        let ppath = path_1.default.join(Editor.Package.getPath(package_json_1.default.name) || '', 'src/prefab/CustomPrefabTemplate.prefab');
+        if (!util_1.default.existsSync(ppath)) {
+            ppath = path_1.default.join(Editor.Package.getPath(package_json_1.default.name) || '', 'src/prefab/PrefabTemplate.prefab');
+        }
+        if (!util_1.default.existsSync(ppath))
+            return;
+        let prefab = await util_1.default.readFile(ppath);
         prefab = this.formatStrByTemplate(prefab, TemplateStr.PrefabTemplate, fname);
         return prefab;
     }
