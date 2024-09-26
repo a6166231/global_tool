@@ -8,6 +8,8 @@ export class rayCaughtControll {
     private _touchPos;
     private _status: boolean = false;
 
+    private _touch;
+
     private static _int: rayCaughtControll;
     public static Ins() {
         if (!this._int) {
@@ -18,9 +20,16 @@ export class rayCaughtControll {
 
     set status(status: boolean) {
         this._status = status;
+        this._touch = null
+
+        if (!this._canvas || !cc.isValid(this._canvas)) {
+            this._canvas = null
+            this.readyToRayCaught()
+        }
+        this._canvas.active = status
         if (!this._status) {
             this._touchPos = null;
-            this._canvas?.destroyAllChildren()
+            this._canvas.destroyAllChildren()
         }
     }
     get status() {
@@ -33,6 +42,14 @@ export class rayCaughtControll {
 
     private _initListener() {
         if (!this._canvas) return
+
+        this._canvas.on(cc.Node.EventType.TOUCH_END, () => {
+            if (this._touch) {
+                window.__updateSelectCurrentNode && window.__updateSelectCurrentNode(this._touch)
+            }
+            this.status = false
+        }, this)
+
         this._canvas.on(cc.Node.EventType.MOUSE_MOVE, this.rayTest, this)
     }
     private _offListener() {
@@ -100,6 +117,8 @@ export class rayCaughtControll {
         this._canvas.getComponent(cc.UITransformComponent).convertToNodeSpaceAR(centerPos, localPos);
         nodeRect.setPosition(localPos);
         nodeRect.layer = touch.layer;
+
+        this._touch = touch
         let isZeroSize = _rect.width === 0 || _rect.height === 0;
         if (isZeroSize) {
             graphics.circle(0, 0, 100);
@@ -111,11 +130,10 @@ export class rayCaughtControll {
             graphics.rect(-bgTransform.width / 2, -bgTransform.height / 2, bgTransform.width, bgTransform.height);
             graphics.fillColor = new cc.Color().fromHEX('#E91E6390');
             graphics.fill();
-            nodeRect.on(cc.Node.EventType.TOUCH_START, () => {
-                window.__updateSelectCurrentNode && window.__updateSelectCurrentNode(touch)
-            })
         }
     }
+
+
 
     foreachChild(node: any) {
         let touch;

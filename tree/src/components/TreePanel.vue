@@ -54,7 +54,6 @@ window["__updateSelectCurrentNode"] = (node: any) => {
   console.log('nodePath: ' + Utils.getNodePath(node))
   console.log(node)
   currentNode = node;
-  Utils.createRayCaught()
   handleNodeExpandDeep(currentNode);
 }
 
@@ -229,7 +228,7 @@ function setChildren(container: TreeNode[], children: any[], path: string[]) {
 
 function refreshTree() {
   // @ts-ignore
-  if (props.show && window.ccdevShow) {
+  if (props.show && window.ccdevShow && cc.director.getScene()) {
     treeMap = [];
     //@ts-ignore
     setChildren(treeMap, cc.director.getScene().children, []);
