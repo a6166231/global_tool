@@ -1,5 +1,4 @@
 import Fs from 'fs';
-import { Component } from '../../../@types/packages/engine/@types/editor-extends';
 
 export default class Utils {
     /**
@@ -81,13 +80,24 @@ export default class Utils {
         return JSON.stringify(obj);
     }
 
-    public static createFile(path: string, data: string = "") {
+    public static createFile(path: string, data: string | null = null) {
         return new Promise((resolve, reject) => {
             Editor.Message.request('asset-db', 'create-asset', path, data, false, false).then((res) => {
                 if (res) {
                     resolve(res)
                 } else {
                     reject(`create dir fail: ${path}`)
+                }
+            })
+        })
+    }
+    public static importFile(fpath: string, opath: string) {
+        return new Promise((resolve, reject) => {
+            Editor.Message.request('asset-db', 'import-asset', fpath, opath).then((res) => {
+                if (res) {
+                    resolve(res)
+                } else {
+                    reject(`import fails fail: ${fpath} -> ${opath} `)
                 }
             })
         })
@@ -117,5 +127,36 @@ export default class Utils {
 
     public static existsSync(path: string) {
         return Fs.existsSync(path)
+    }
+
+    public static async getImagesInFolder(folderPath: string) {
+        try {
+            const response = await fetch(`${folderPath}?${Date.now()}`);
+            const images = await response.json();
+            return images;
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
+    public static destroyAllChildren(node: HTMLElement) {
+        if (!node) return
+        while (node.firstChild) {
+            node.removeChild(node.firstChild);
+        }
+    }
+
+    public static debounce<T extends (...args: any[]) => void>(func: T, wait: number): T {
+        let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+        return ((...args: Parameters<T>) => {
+            if (timeoutId !== null) {
+                clearTimeout(timeoutId);
+            }
+            timeoutId = setTimeout(() => {
+                func(...args);
+                timeoutId = null;
+            }, wait);
+        }) as T;
     }
 }

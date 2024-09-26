@@ -23,7 +23,7 @@
                         <input id="scriptName" type="text" value="newScript" />
                     </td>
                     <td>
-                        <input id="scriptComment" type="text" value="注释"/>
+                        <input id="scriptComment" type="text" value="注释" />
                     </td>
                 </tr>
             </table>
@@ -143,10 +143,69 @@
                     </tr>
                 </table>
             </ui-prop>
+            <ui-prop id="resItem">
+                <table style="width: 95%;">
+                    <tr>
+                        <td style="width: 100px;">
+                            <ui-label class="modelName" value="model: "></ui-label>
+                        </td>
+                        <td style="width: 45;">
+                            <div class="LinkItem">
+                                <table>
+                                    <tr>
+                                        <div class="btnLink">
+                                            <span>
+                                                <ui-button class="transparent icon-button green">
+                                                    <ui-icon style="transform: scale(1.5);" value="link"></ui-icon>
+                                                </ui-button>
+                                            </span>
+                                            <span>
+                                                <ui-button class="transparent icon-button">
+                                                    <ui-icon style="transform: scale(1.5);" value="unlink"></ui-icon>
+                                                </ui-button>
+                                            </span>
+                                        </div>
+                                    </tr>
+                                </table>
+                            </div>
+                        </td>
+                        <td style="width: 200px;">
+                            <input type="file" style="width: 100% ;" class="importResDir"  webkitdirectory directory>
+                        </td>
+                        <td style="width: 50%;"></td>
+                    </tr>
+                    <tr class="tr2">
+                        <td>
+                            <ui-label value="path:"></ui-label>
+                        </td>
+                        <td colspan="3">
+                            <ui-file class="outPutResDir" type="directory" value="project://assets/test"></ui-file>
+                            <span class="btnLock" style="width: 5%;height: 100%;">
+                                <span>
+                                    <ui-button class="transparent icon-button green">
+                                        <ui-icon style="transform: scale(1.5);" value="lock" class="lock">
+                                        </ui-icon>
+                                    </ui-button>
+                                </span>
+                                <span>
+                                    <ui-button class="transparent icon-button">
+                                        <ui-icon style="transform: scale(1.5);" value="unlock" class="lock">
+                                        </ui-icon>
+                                    </ui-button>
+                                </span>
+                            </span>
+                        </td>
+                    </tr>
+                </table>
+            </ui-prop>
+
+            <div class="grid-item"></div>
         </div>
     </div>
-    <div id="code">
-        <ui-code hidden="true" id="mainCode" language="typescript">
-        </ui-code>
+    <div id="preview-code" hidden>
+        <ui-code id="mainCode" language="typescript"></ui-code>
+    </div>
+    <div id="preview-res" hidden>
+        <div id="resNode" class="grid-container"></div>
     </div>
 </div>

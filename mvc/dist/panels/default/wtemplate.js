@@ -41,6 +41,7 @@ const CIProxyLink_1 = require("./customInject/CIProxyLink");
 const CIProxyTable_1 = require("./customInject/CIProxyTable");
 const CIJumpLayerProxy_1 = require("./customInject/CIJumpLayerProxy");
 const CIMediatorLink_1 = require("./customInject/CIMediatorLink");
+const CILayerLink_1 = require("./customInject/CILayerLink");
 var TemplateStr;
 (function (TemplateStr) {
     TemplateStr["Author"] = "<%Author%>";
@@ -238,22 +239,23 @@ class wtemplate {
             str,
             CIList: [],
         };
-        if (linkObj && linkObj.status && linkObj.script) {
-            let extendsStr = `extends ${extendsCls}`;
-            str = str.replace(extendsStr, `${extendsStr}<${linkObj.script.trueName}>`);
-            str = str.replace(constructorStr, exports.TemplateScriptMap.proxyConstructor);
-            str = this.formatStrByTemplate(str, constructorStr, TemplateStr.Constructor);
-            str = this.formatStrByTemplate(str, linkObj.script.trueName, TemplateStr.InterfaceClassName);
-        }
+        let linkScript = linkObj && linkObj.status && linkObj.script;
         //proxy这里要预览结果 所以要提前解析一次
         let ci = await CIBase_1.CIBase.create({
             CIWay: CIProxyLink_1.CIProxyLink,
-            fpath: (_a = linkObj === null || linkObj === void 0 ? void 0 : linkObj.script) === null || _a === void 0 ? void 0 : _a.path.replace(Editor.Project.path, ''),
+            fpath: (_a = linkScript === null || linkScript === void 0 ? void 0 : linkScript.path) === null || _a === void 0 ? void 0 : _a.replace(Editor.Project.path, ''),
             buffer: str,
             opath: path_1.default.join(Editor.Project.path, param.path, param.scriptName + '.ts').replace('db:', ''),
             bPreview,
         });
         str = ci.getFullText();
+        if (linkScript) {
+            let extendsStr = `extends ${extendsCls}`;
+            str = str.replace(extendsStr, `${extendsStr}<${linkScript.trueName}>`);
+            str = str.replace(constructorStr, exports.TemplateScriptMap.proxyConstructor);
+            str = this.formatStrByTemplate(str, constructorStr, TemplateStr.Constructor);
+            str = this.formatStrByTemplate(str, linkScript.trueName, TemplateStr.InterfaceClassName);
+        }
         if (!bPreview) {
             exportModel.CIList.push({
                 CIWay: CIWorldProxyTable_1.CIWorldProxyTable,
@@ -291,6 +293,15 @@ class wtemplate {
                 ],
             });
         }
+        let ci = await CIBase_1.CIBase.create({
+            CIWay: CILayerLink_1.CILayerLink,
+            buffer: str,
+            opath: path_1.default.join(Editor.Project.path, param.path, param.scriptName + '.ts').replace('db:', ''),
+            lpath: path_1.default.join(Editor.Project.path, param.model.classPath).replace('db:', ''),
+            bPreview,
+        });
+        str = ci.getFullText();
+        exportModel.str = str;
         return exportModel;
     }
     static formatNoticeListener(name) {

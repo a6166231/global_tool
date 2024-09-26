@@ -39,6 +39,7 @@ var TemplateType;
 (function (TemplateType) {
     TemplateType["script"] = "script";
     TemplateType["prefab"] = "prefab";
+    TemplateType["res"] = "res";
 })(TemplateType = exports.TemplateType || (exports.TemplateType = {}));
 let cfgJson;
 async function getLocalCfgJson() {

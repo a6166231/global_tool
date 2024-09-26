@@ -12,19 +12,24 @@ class LinkItem {
         return this._status;
     }
     get selected() {
-        return this._link.value;
+        var _a;
+        return (_a = this._link) === null || _a === void 0 ? void 0 : _a.value;
     }
     set hidden(status) {
         this._item.hidden = status;
     }
     get hidden() {
-        return this._item.hidden;
+        var _a;
+        return (_a = this._item) === null || _a === void 0 ? void 0 : _a.hidden;
     }
     set dropLinkHiddent(status) {
+        if (!this._link)
+            return;
         this._link.hidden = status;
     }
     get dropLinkHiddent() {
-        return this._link.hidden;
+        var _a;
+        return (_a = this._link) === null || _a === void 0 ? void 0 : _a.hidden;
     }
     constructor(item, data, changeCall) {
         this._status = true;
@@ -32,7 +37,7 @@ class LinkItem {
         this._select = {};
         this._unselect = {};
         this._btn = {};
-        this._link = {};
+        this._link = null;
         this._data = {};
         //@ts-ignore
         this._changeCall = null;
@@ -57,13 +62,15 @@ class LinkItem {
             this.onClick();
             this.onChangeCall();
         };
-        this._link.onclick = (ev) => {
-            ev.stopPropagation();
-            this.initLinkList();
-        };
-        this._link.onchange = () => {
-            this.onChangeCall();
-        };
+        if (this._link) {
+            this._link.onclick = (ev) => {
+                ev.stopPropagation();
+                this.initLinkList();
+            };
+            this._link.onchange = () => {
+                this.onChangeCall();
+            };
+        }
     }
     onChangeCall() {
         this._changeCall && this._changeCall();
@@ -73,7 +80,7 @@ class LinkItem {
         this.refreshSelect();
     }
     initLinkList() {
-        if (this._link.innerHTML.length != 0)
+        if (!this._link || this._link.innerHTML.length != 0)
             return;
         let mapData = new Map;
         let hidden = true;

@@ -28,6 +28,13 @@
             "appendPath": "_layer",
             "autoPath": true,
             "type": "prefab"
+        },
+        {
+            "name": "res",
+            "outPath": "db://assets/resources/res/private/",
+            "appendPath": "_ui",
+            "autoPath": true,
+            "type": "res"
         }
     ],
     "NoticeTable": "assets/scripts/config/NoticeTable.ts",

@@ -13,7 +13,6 @@ import { CIBase } from './customInject/CIBase';
 import { AST } from './ts-morph/AST';
 import path from 'path';
 import packageJSON from '../../../package.json';
-
 /**
  * @zh 如果希望兼容 3.3 之前的版本可以使用下方的代码
  * @en You can add the code below if you want compatibility with versions prior to 3.3
@@ -44,6 +43,8 @@ let _bAutoWidth: boolean = false;
 
 let _vLinkItem: Array<LinkItem> = [];
 
+let _filePreivewDirty: boolean = false
+
 module.exports = Editor.Panel.define({
     template: readFileSync(join(__dirname, '../../../static/template/default/index.html'), 'utf-8'),
     style: readFileSync(join(__dirname, '../../../static/style/default/index.css'), 'utf-8'),
@@ -56,8 +57,15 @@ module.exports = Editor.Panel.define({
         classesPanel: '#classesPanel',
         scriptItem: '#scriptItem',
         prefabItem: '#prefabItem',
+        resItem: '#resItem',
         btnCreate: '#btnCreate',
         mainCode: "#mainCode",
+        resNode: "#resNode",
+        dragRect: "#dragRect",
+        resTouch: "#resTouch",
+
+        previewCode: "#preview-code",
+        previewRes: "#preview-res",
     },
     methods: {
         onCheckBoxClick(index: number, checked: boolean) {
@@ -66,10 +74,20 @@ module.exports = Editor.Panel.define({
             item.hidden = !checked;
             this.refreshScriptInfo();
         },
-        createUIAssetItem(data: TemplateModel, iindex: number) {
-            if (!this.$.classesPanel || !this.$.scriptItem || !this.$.prefabItem) return;
+        getCloneItemByType(type: TemplateType) {
+            switch (type) {
+                case TemplateType.script:
+                    return this.$.scriptItem!.cloneNode(true)
+                case TemplateType.prefab:
+                    return this.$.prefabItem!.cloneNode(true)
+                case TemplateType.res:
+                    return this.$.resItem!.cloneNode(true)
+            }
+        },
+
+        initUIAssetItem1(item: HTMLElement, data: TemplateModel, iindex: number) {
             const bScript = data.type == TemplateType.script
-            let item = (bScript ? this.$.scriptItem.cloneNode(true) : this.$.prefabItem.cloneNode(true)) as HTMLElement;
+
             let modelName = Utils.getClsNameElement(item, 'modelName');
             //@ts-ignore
             modelName.value = data.name + ': ';
@@ -90,7 +108,7 @@ module.exports = Editor.Panel.define({
             }
 
             let file = Utils.getTagNameElement(item, 'ui-file')
-            bScript && (file.onkeyup = () => {
+            bScript && (file.onchange = () => {
                 this.previewTempResult(iindex)
             })
 
@@ -106,10 +124,53 @@ module.exports = Editor.Panel.define({
                     })
                 }
             }
-            this.$.classesPanel.appendChild(item)
             bScript && (item.onclick = () => {
                 this.previewTempResult(iindex);
             })
+        },
+        initUIAssetItem2(item: HTMLElement, data: TemplateModel, iindex: number) {
+            let modelName = Utils.getClsNameElement(item, 'modelName');
+            //@ts-ignore
+            modelName.value = data.name + ': ';
+            modelName.style.width = `100px`;
+
+            let file = Utils.getClsNameElement(item, 'outPutResDir')
+            let file2 = Utils.getClsNameElement(item, 'importResDir')
+            file2.onchange = () => {
+                _filePreivewDirty = false
+                this.previewTempResult(iindex)
+            }
+            //@ts-ignore
+            file.value = data.outPath.replace(dbHead, projectHead)
+
+            let clsSelect = Utils.getClsNameElement(item, 'LinkItem');
+            if (clsSelect) {
+                _vLinkItem[iindex] = new LinkItem(clsSelect, data, () => {
+                    _previewIndex = iindex
+                    this.refreshScriptInfo()
+                })
+            }
+            item.onclick = () => {
+                _filePreivewDirty = false
+                this.previewTempResult(iindex);
+            }
+        },
+        createUIAssetItem(data: TemplateModel, iindex: number) {
+            if (!this.$.classesPanel) return;
+            let item = this.getCloneItemByType(data.type) as HTMLElement
+
+            switch (data.type) {
+                case TemplateType.res:
+                    this.initUIAssetItem2(item, data, iindex)
+                    break
+                case TemplateType.script:
+                case TemplateType.prefab:
+                default:
+                    this.initUIAssetItem1(item, data, iindex)
+                    break
+            }
+
+            this.$.classesPanel.appendChild(item)
             return item;
         },
         /** 根据模板生成功能列表 */
@@ -168,6 +229,9 @@ module.exports = Editor.Panel.define({
             }
         },
         refreshScriptInfo(bPreview: boolean = true) {
+            //@ts-ignore
+            if (this._assetsCreating) return
+
             let name = this.$.scriptName
             if (!name) return
             //@ts-ignore
@@ -273,13 +337,14 @@ module.exports = Editor.Panel.define({
             itemName.style.color = has ? 'yellow' : 'mediumspringgreen';
         },
         /** 准备导出资源 */
-        readyCreateAssets() {
+        async readyCreateAssets() {
             let name = this.$.scriptName
             if (!name) return
 
             let faild = false;
             let vReadyScripts = []
             let vReadyPrefabs = []
+            let vReadyRes = []
             //@ts-ignore
             if (name.value && name.value.length) {
                 for (let [k, v] of mapSelect2ScriptItem) {
@@ -292,10 +357,10 @@ module.exports = Editor.Panel.define({
                         break;
                     }
 
-                    if (v.data.type == TemplateType.script) {
-                        vReadyScripts.push(v)
-                    } else {
-                        vReadyPrefabs.push(v)
+                    switch (v.data.type) {
+                        case TemplateType.script: vReadyScripts.push(v); break
+                        case TemplateType.prefab: vReadyPrefabs.push(v); break
+                        case TemplateType.res: vReadyRes.push(v); break
                     }
                 }
             }
@@ -304,16 +369,52 @@ module.exports = Editor.Panel.define({
                 console.log('warning !!!')
                 return;
             }
+
+            //@ts-ignore
+            this._assetsCreating = true
             if (vReadyScripts.length)
-                this.syncCreateScripts(vReadyScripts);
+                await this.syncCreateScripts(vReadyScripts);
             if (vReadyPrefabs.length)
-                this.syncCreatePrefabs(vReadyPrefabs);
+                await this.syncCreatePrefabs(vReadyPrefabs);
+            if (vReadyRes.length)
+                await this.syncCreateResources(vReadyRes);
+            //@ts-ignore
+            this._assetsCreating = false
         },
         async getUserInfo() {
             if (!_userInfo) {
                 _userInfo = await Editor.User.getData();
             }
             return _userInfo
+        },
+        async syncCreateResources(vReadyRes: Array<{ item: HTMLElement, data: TemplateModel }>) {
+            let obj = vReadyRes[0]
+            if (!obj || !this.$.resNode) return
+
+            console.log('3.create resources~~~~')
+
+            let filepath = Utils.getClsNameElement(obj.item, 'outPutResDir');
+            //@ts-ignore
+            let ppath: string = filepath.value.replace(projectHead, dbHead)
+
+            let promiseList: Array<Promise<any>> = []
+            let children = this.$.resNode.children
+            for (let child of children) {
+                if (child.classList && child.classList.contains('grid-item-selected')) {
+                    //@ts-ignore
+                    let file: File = child._file
+                    if (!file) continue
+
+                    //@ts-ignore
+                    promiseList.push(Utils.importFile(file.path, ppath + '/' + child._fpath))
+                }
+            }
+
+            await Promise.all(promiseList).catch(err => {
+                console.error(err)
+            })
+
+            console.log('%c3.create resources end ~~~~', 'color: green')
         },
         /** 异步创建所有的预制体 */
         async syncCreatePrefabs(vReadyPrefabs: Array<{ item: HTMLElement, data: TemplateModel }>) {
@@ -339,7 +440,7 @@ module.exports = Editor.Panel.define({
                 })
                 count++;
             }
-            console.log('2-2.create prefabs end~~~~')
+            console.log('%c2-2.create prefabs end~~~~', 'color: green')
         },
         /** 异步创建所有的脚本 */
         async syncCreateScripts(vReadyScripts: Array<{ item: HTMLElement, data: TemplateModel }>) {
@@ -368,7 +469,7 @@ module.exports = Editor.Panel.define({
                 })
                 count++;
             }
-            console.log('1-1.create scripts end~~~~')
+            console.log('%c1-1.create scripts end~~~~', 'color: green')
 
             console.log('1-2.inject scripts~~~~')
 
@@ -383,15 +484,13 @@ module.exports = Editor.Panel.define({
                     }
                 }
             }
-            console.log('1-3.inject scripts end~~~~')
-
+            console.log('%c1-3.inject scripts end~~~~', 'color: green')
             AST.clear()
         },
         async previewTempResult(index?: number) {
             this.refreshMVCModelData();
 
             index = index ?? _previewIndex
-            if (!this.$.mainCode) return
             let obj = mapSelect2ScriptItem.get(index)
             if (!obj) return;
 
@@ -404,15 +503,73 @@ module.exports = Editor.Panel.define({
                 window.resizeTo(width, window.innerHeight);
             }
             _previewIndex = index;
-            let userInfo = await this.getUserInfo();
 
-            let lb = Utils.getClsNameElement(obj.item, 'layerName');
-            let path = Utils.getTagNameElement(obj.item, 'ui-file');
-            //@ts-ignore
-            let ppath = path.value.replace(projectHead, dbHead)
-            //@ts-ignore
-            let model = await this.formatScriptTemplate(ppath, lb.value, obj.data, userInfo, window['mvcDebug'] ? false : true)
-            this.$.mainCode.innerHTML = model.str
+            if (this.$.previewCode) {
+                this.$.previewCode.hidden = true
+            }
+            if (this.$.previewRes) {
+                this.$.previewRes.hidden = true
+            }
+
+            if (obj.data.type == TemplateType.res) {
+                //@ts-ignore
+                let files: Array<File> = Utils.getClsNameElement(obj.item, 'importResDir')?.files;
+                if (!files) return
+
+                if (!this.$.previewRes || !this.$.resNode || !files || !files.length) return
+                this.$.previewRes.hidden = false
+
+                if (_filePreivewDirty) return
+                _filePreivewDirty = true
+
+                let normalizePath = path.normalize(files[0].webkitRelativePath)
+                let index = normalizePath.indexOf('\\')
+                Utils.destroyAllChildren(this.$.resNode)
+                for (let image of files) {
+                    if (image.type.indexOf('image') == -1) continue
+                    const gridItem = document.createElement('div');
+                    gridItem.classList.add('grid-item', 'grid-item-selected');
+
+                    const imgElement = document.createElement('img');
+                    imgElement.src = `${image.path}`;
+                    imgElement.draggable = false
+                    gridItem.appendChild(imgElement);
+                    const lbElement = document.createElement('span');
+                    lbElement.innerText = `${image.name}`;
+                    gridItem.appendChild(lbElement);
+
+                    const checkbox = document.createElement('ui-checkbox');
+                    //@ts-ignore
+                    checkbox.value = true
+                    //@ts-ignore
+                    checkbox.readonly = true
+                    gridItem.appendChild(checkbox);
+
+                    //@ts-ignore
+                    gridItem._file = image
+                    //@ts-ignore
+                    gridItem._fpath = image.webkitRelativePath.substring(index + 1)
+                    gridItem.onclick = () => {
+                        //@ts-ignore
+                        checkbox.value = !checkbox.value
+                        //@ts-ignore
+                        gridItem.classList.toggle('grid-item-selected', checkbox.value)
+                    }
+                    this.$.resNode!.appendChild(gridItem);
+                }
+            } else {
+                if (!this.$.previewCode || !this.$.mainCode) return
+                this.$.previewCode.hidden = false
+
+                let userInfo = await this.getUserInfo();
+                let lb = Utils.getClsNameElement(obj.item, 'layerName');
+                let path = Utils.getTagNameElement(obj.item, 'ui-file');
+                //@ts-ignore
+                let ppath = path?.value.replace(projectHead, dbHead) || ''
+                //@ts-ignore
+                let model = await this.formatScriptTemplate(ppath, lb.value, obj.data, userInfo, window['mvcDebug'] ? false : true)
+                this.$.mainCode.innerHTML = model.str
+            }
         },
         /** 格式化脚本模板 */
         formatScriptTemplate(path: string, scriptName: string, model: TemplateModel, userInfo: Editor.User.UserData, bPreview: boolean): Promise<TemplateExportModel> {
@@ -427,8 +584,90 @@ module.exports = Editor.Panel.define({
         addListener() {
             this.$.scriptName && (this.$.scriptName.onkeyup = this.refreshScriptInfo.bind(this, true));
             this.$.btnCreate && (this.$.btnCreate.onclick = this.readyCreateAssets.bind(this));
-            mvc.messageMgr().setResChangeCall(this.refreshScriptInfo.bind(this, false));
+            mvc.messageMgr().setResChangeCall(Utils.debounce(this.onResChangeDelayCall.bind(this), 3000));
+            // this.initResContainerListener()
+        },
+
+        onResChangeDelayCall() {
+            try {
+                this.refreshScriptInfo(true)
+            } catch (error) {
+                console.log(error)
+            }
         }
+        // initResContainerListener() {
+        //     const gridContainer = this.$.resTouch
+        //     const dragRect = this.$.dragRect
+        //     if (!dragRect || !gridContainer) return
+
+        //     let isDragging = false;
+        //     let startCoord = { x: 0, y: 0 };
+        //     let endCoord = { x: 0, y: 0 };
+        //     // 监听 mousedown 事件
+        //     gridContainer.addEventListener('mousedown', (event) => {
+        //         isDragging = true;
+        //         startCoord = { x: event.clientX, y: event.clientY };
+        //         dragRect.style.display = 'block';
+        //     });
+
+        //     // 监听 mousemove 事件
+        //     gridContainer.addEventListener('mousemove', (event) => {
+        //         if (isDragging) {
+        //             dragRect.hidden = false
+        //             endCoord = { x: event.clientX, y: event.clientY };
+        //             updateDragRect();
+        //         }
+        //     });
+
+        //     gridContainer.addEventListener('mouseleave', () => {
+        //         isDragging = false;
+        //         dragRect.style.display = 'none';
+        //         if (dragRect.hidden) return
+        //         const dragRectElement = dragRect.getBoundingClientRect();
+        //         toggleCheckboxes(dragRectElement);
+        //     });
+        //     gridContainer.addEventListener('mouseup', () => {
+        //         isDragging = false;
+        //         dragRect.style.display = 'none';
+        //         if (dragRect.hidden) return
+        //         const dragRectElement = dragRect.getBoundingClientRect();
+        //         toggleCheckboxes(dragRectElement);
+        //     });
+
+        //     // 更新拖拽矩形
+        //     let updateDragRect = () => {
+        //         const left = Math.min(startCoord.x, endCoord.x);
+        //         const top = Math.min(startCoord.y, endCoord.y);
+        //         const width = Math.abs(endCoord.x - startCoord.x);
+        //         const height = Math.abs(endCoord.y - startCoord.y);
+
+        //         dragRect.style.left = `${left}px`;
+        //         dragRect.style.top = `${top}px`;
+        //         dragRect.style.width = `${width}px`;
+        //         dragRect.style.height = `${height}px`;
+        //     }
+
+        //     let toggleCheckboxes = (rect: DOMRect) => {
+        //         dragRect.hidden = true
+
+        //         const gridItems = document.querySelectorAll('.grid-item');
+        //         gridItems.forEach((gridItem) => {
+        //             const itemRect = gridItem.getBoundingClientRect();
+        //             const isInside = rect.left <= itemRect.right && rect.right >= itemRect.left &&
+        //                 rect.top <= itemRect.bottom && rect.bottom >= itemRect.top;
+
+        //             if (isInside) {
+        //                 const checkbox = gridItem.querySelector('.ui-checkbox');
+        //                 if (checkbox) {
+        //                     // 假设有一个 checked 属性表示选中状态
+        //                     const isChecked = checkbox.classList.contains('checked');
+        //                     checkbox.classList.toggle('checked', !isChecked);
+        //                 }
+        //             }
+        //         });
+        //     }
+
+        // }
     },
     ready() {
         collectFilesfunc().then(async (vMap: [Map<string, ScriptDataModel | string>, Map<string, string>]) => {

@@ -81,7 +81,7 @@ class Utils {
     static Obj2String(obj, add = "    ") {
         return JSON.stringify(obj);
     }
-    static createFile(path, data = "") {
+    static createFile(path, data = null) {
         return new Promise((resolve, reject) => {
             Editor.Message.request('asset-db', 'create-asset', path, data, false, false).then((res) => {
                 if (res) {
@@ -89,6 +89,18 @@ class Utils {
                 }
                 else {
                     reject(`create dir fail: ${path}`);
+                }
+            });
+        });
+    }
+    static importFile(fpath, opath) {
+        return new Promise((resolve, reject) => {
+            Editor.Message.request('asset-db', 'import-asset', fpath, opath).then((res) => {
+                if (res) {
+                    resolve(res);
+                }
+                else {
+                    reject(`import fails fail: ${fpath} -> ${opath} `);
                 }
             });
         });
@@ -116,6 +128,35 @@ class Utils {
     }
     static existsSync(path) {
         return fs_1.default.existsSync(path);
+    }
+    static async getImagesInFolder(folderPath) {
+        try {
+            const response = await fetch(`${folderPath}?${Date.now()}`);
+            const images = await response.json();
+            return images;
+        }
+        catch (error) {
+            console.error(error);
+        }
+    }
+    static destroyAllChildren(node) {
+        if (!node)
+            return;
+        while (node.firstChild) {
+            node.removeChild(node.firstChild);
+        }
+    }
+    static debounce(func, wait) {
+        let timeoutId = null;
+        return ((...args) => {
+            if (timeoutId !== null) {
+                clearTimeout(timeoutId);
+            }
+            timeoutId = setTimeout(() => {
+                func(...args);
+                timeoutId = null;
+            }, wait);
+        });
     }
 }
 exports.default = Utils;

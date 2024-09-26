@@ -11,6 +11,7 @@ const { promisify } = require('util');
 export enum TemplateType {
     script = 'script',
     prefab = 'prefab',
+    res = 'res'
 }
 
 export interface TemplateModel {

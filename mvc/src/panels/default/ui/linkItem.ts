@@ -11,7 +11,7 @@ export class LinkItem {
     private _unselect: HTMLElement = {} as HTMLElement;
 
     private _btn: HTMLElement = {} as HTMLElement;
-    private _link: HTMLSelectElement = {} as HTMLSelectElement;
+    private _link: HTMLSelectElement = null as any;
     private _data: TemplateModel = {} as TemplateModel;
 
     //@ts-ignore
@@ -22,7 +22,7 @@ export class LinkItem {
     }
 
     public get selected() {
-        return this._link.value
+        return this._link?.value
     }
 
     public set hidden(status: boolean) {
@@ -30,14 +30,15 @@ export class LinkItem {
     }
 
     public get hidden() {
-        return this._item.hidden;
+        return this._item?.hidden;
     }
     public set dropLinkHiddent(status: boolean) {
+        if (!this._link) return
         this._link.hidden = status;
     }
 
     public get dropLinkHiddent() {
-        return this._link.hidden;
+        return this._link?.hidden;
     }
 
     constructor(item: HTMLElement, data: TemplateModel, changeCall: Function) {
@@ -68,13 +69,15 @@ export class LinkItem {
             this.onChangeCall()
         }
 
-        this._link.onclick = (ev) => {
-            ev.stopPropagation();
-            this.initLinkList();
-        }
+        if (this._link) {
+            this._link.onclick = (ev) => {
+                ev.stopPropagation();
+                this.initLinkList();
+            }
 
-        this._link.onchange = () => {
-            this.onChangeCall()
+            this._link.onchange = () => {
+                this.onChangeCall()
+            }
         }
     }
 
@@ -88,7 +91,7 @@ export class LinkItem {
     }
 
     private initLinkList() {
-        if (this._link.innerHTML.length != 0) return;
+        if (!this._link || this._link.innerHTML.length != 0) return;
         let mapData: Map<string, string> = new Map;
         let hidden = true;
         switch (this._data.name) {

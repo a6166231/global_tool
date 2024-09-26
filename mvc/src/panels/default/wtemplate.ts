@@ -1,5 +1,5 @@
 import path, { join } from "path";
-import { TemplateModel, getCfgJson } from "../../main";
+import { ScriptDataModel, TemplateModel, getCfgJson } from "../../main";
 import { AssetItem, MVCModel, MVCModelName, ScriptLinkModel } from "./MVCModel";
 import Utils from "./util";
 import packageJSON from '../../../package.json';
@@ -12,6 +12,7 @@ import { CIProxyLink } from "./customInject/CIProxyLink";
 import { CIProxyTable } from "./customInject/CIProxyTable";
 import { CIJumpLayerProxy, JumpLayerProxyData } from "./customInject/CIJumpLayerProxy";
 import { CIMediatorLink } from "./customInject/CIMediatorLink";
+import { CILayerLink } from "./customInject/CILayerLink";
 
 export enum TemplateStr {
     Author = '<%Author%>',
@@ -265,22 +266,23 @@ export class wtemplate {
             str,
             CIList: [],
         }
-        if (linkObj && linkObj.status && linkObj.script) {
-            let extendsStr = `extends ${extendsCls}`;
-            str = str.replace(extendsStr, `${extendsStr}<${linkObj.script.trueName}>`)
-            str = str.replace(constructorStr, TemplateScriptMap.proxyConstructor)
-            str = this.formatStrByTemplate(str, constructorStr, TemplateStr.Constructor)
-            str = this.formatStrByTemplate(str, linkObj.script.trueName, TemplateStr.InterfaceClassName)
-        }
+        let linkScript: ScriptDataModel = linkObj && linkObj.status && linkObj.script as any
         //proxy这里要预览结果 所以要提前解析一次
         let ci = await CIBase.create({
             CIWay: CIProxyLink,
-            fpath: linkObj?.script?.path.replace(Editor.Project.path, ''),
+            fpath: linkScript?.path?.replace(Editor.Project.path, ''),
             buffer: str,
             opath: path.join(Editor.Project.path, param.path, param.scriptName + '.ts').replace('db:', ''),
             bPreview,
         })
         str = ci.getFullText()
+        if (linkScript) {
+            let extendsStr = `extends ${extendsCls}`;
+            str = str.replace(extendsStr, `${extendsStr}<${linkScript.trueName}>`)
+            str = str.replace(constructorStr, TemplateScriptMap.proxyConstructor)
+            str = this.formatStrByTemplate(str, constructorStr, TemplateStr.Constructor)
+            str = this.formatStrByTemplate(str, linkScript.trueName, TemplateStr.InterfaceClassName)
+        }
         if (!bPreview) {
             exportModel.CIList!.push({
                 CIWay: CIWorldProxyTable,
@@ -318,6 +320,16 @@ export class wtemplate {
                 ],
             })
         }
+
+        let ci = await CIBase.create({
+            CIWay: CILayerLink,
+            buffer: str,
+            opath: path.join(Editor.Project.path, param.path, param.scriptName + '.ts').replace('db:', ''),
+            lpath: path.join(Editor.Project.path, param.model.classPath!).replace('db:', ''),
+            bPreview,
+        })
+        str = ci.getFullText()
+        exportModel.str = str
         return exportModel
     }
 
