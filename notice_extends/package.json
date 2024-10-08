@@ -1,0 +1,46 @@
+{
+    "package_version": 2,
+    "version": "1.0.0",
+    "name": "notice_extends",
+    "description": "i18n:notice_extends.description",
+    "main": "./dist/main.js",
+    "dependencies": {
+        "chokidar": "^4.0.1",
+        "fs-extra": "^10.0.0",
+        "path": "^0.12.7",
+        "pkg-dir": "^8.0.0",
+        "ts-morph": "^21.0.1"
+    },
+    "devDependencies": {
+        "@types/fs-extra": "^9.0.5",
+        "@types/node": "^16.0.1",
+        "typescript": "^4.3.4"
+    },
+    "contributions": {
+        "messages": {
+            "focus-main-windows": {
+                "methods": [
+                    "focusMainWindows"
+                ],
+                "description": "使cc editor窗口聚焦",
+                "public": true
+            },
+            "open-prefab": {
+                "public": true
+            },
+            "open-script": {
+                "public": true
+            },
+            "refresh-script": {
+                "public": true
+            }
+        },
+        "server": "./dist/main.js"
+    },
+    "author": "www",
+    "editor": ">=3.7.3",
+    "scripts": {
+        "build": "tsc -b & webpack",
+        "watch": "tsc -w"
+    }
+}
