@@ -1,0 +1,71 @@
+<div class="counter full">
+    <div class="common-use">
+        <span>常用</span>
+        <section class="h-section" whole>
+            <div class="group-item" v-for="(group, index) in cuseGroup" :key="index" @click="clickGroup(group)">
+                <ui-button :class="group==nowGroup ? 'select':''">{{group.name}}</ui-button>
+            </div>
+        </section>
+    </div>
+    <div class="h-line"></div>
+    <div class="group-panel">
+
+        <div class="group-info-panel">
+
+            <ui-drag-area id="dragArea" ref="dragArea" class="group-drag tree" droppable="cc.Asset" @drop="drop">
+                <div id="readyDragArea" class="drag-area-ready">
+                    <span>ADD</span>
+                </div>
+                <div class="group-info-title">
+                    <span v-if="!bAddGroup && !bReName" class="group-info-title-text"
+                        @click="onReGroupName">{{nowGroup && nowGroup.name || ''}}</span>
+                    <div v-if="bAddGroup || bReName">
+                        <input class="group-input" type="text" :value="inputValue" @input="inputGroupName">
+                        <ui-button @click="onCreateNewGroup">确定</ui-button>
+                    </div>
+                    <ui-icon class="lock" v-if="nowGroup" :value="nowGroup && nowGroup.pin ? `pin` : `unpin`"
+                        @click="clickPin">
+                    </ui-icon>
+                    <ui-icon class="group-delete" v-if="nowGroup && !bAddGroup" value="close" @click="delGroup"></ui-icon>
+                    <div class="type-sort-content">
+                        <div class="type-item" v-for="(type, index) in typeEnum" :key="type.name">
+                            <input type="radio" :id="type.name" :value="type.name" v-model="nowType">
+                            <label :for="type.name">{{ type.name }}</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="group-info-content">
+                    <!-- <div v-if="nowType=='名称'"> -->
+                    <section>
+                        <div v-for="(item, index) in infos.show" :key="item.uuid" class="group-info-content-item"
+                            @click="jumpResource(item.uuid)" @dblclick="openResource(item.uuid)">
+                            <ui-icon color="true" :value="item.importer" class="icon"></ui-icon>
+                            <div class="name"><span>{{item.name}}</span></div>
+                            <ui-icon class="assets-delete" value="close" @click="delAsset(item.uuid)"></ui-icon>
+                        </div>
+                    </section>
+                    <!-- </div>
+                    <div v-if="nowType=='类型'">
+
+                    </div> -->
+                </div>
+            </ui-drag-area>
+        </div>
+        <div class="v-line"></div>
+        <div class="group-list-panel full">
+            <div class="group-search">
+                <span>查找：</span><input type="text" @input="onSearchInput">
+            </div>
+            <div>
+                <ui-button class="group-add" @click="addGroup">新建组</ui-button>
+            </div>
+            <div class="group-content full">
+                <section class="v-section" whole>
+                    <div class="group-item" v-for="(group, index) in groups" :key="index" @click="clickGroup(group)">
+                        <ui-button :class="group==nowGroup ? 'select':''">{{group.name}}</ui-button>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+</div>
