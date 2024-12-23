@@ -1,3 +1,2 @@
-/src/prefab/CustomPrefabTemplate.prefab
-
-/@types
+./src/cfg.json
+@types
