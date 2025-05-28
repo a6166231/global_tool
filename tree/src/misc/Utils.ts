@@ -35,6 +35,13 @@ export default class Utils {
         console.log(window['temp' + i]);
     }
 
+    static jumpInspect(target: any) {
+        if (target) {
+            window['Ready_Open_Chrome_Source_Target'] = target.constructor;
+            window.postMessage({ type: "readyOpenChromeSource" }, "*");
+        }
+    }
+
     private static _iframe: HTMLAnchorElement
     private static getIFrameEle() {
         if (this._iframe) return this._iframe

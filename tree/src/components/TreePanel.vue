@@ -20,7 +20,9 @@
     <el-tree-v2 ref="treeView" :props="defaultProps" empty-text="正在加载场景" :highlight-current="true"
       :expand-on-click-node="false" @current-change="handleCurrentNodeChange" :height="treeViewHeight">
       <template #default="{ node }">
-        <span @dblclick="Utils.jumpPrefab(node.data)" :class="{ 'node-hide': !node.data.active , 'bprefab': node.data.bprefab }">{{ (node.data.bprefab ? '[P]' : '') + node.label }}</span>
+        <el-scrollbar>
+          <span @dblclick="Utils.jumpPrefab(node.data)" :class="{ 'node-hide': !node.data.active , 'bprefab': node.data.bprefab }">{{ (node.data.bprefab ? '[P]' : '') + node.label }}</span>
+        </el-scrollbar>
       </template>
     </el-tree-v2>
   </div>
